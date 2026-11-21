@@ -4,16 +4,23 @@
 <header class="top"><a class="brand" href="#town" aria-label="澤井航志のポートフォリオ、街へ"><i class="brandmark" aria-hidden="true"><b></b><b></b><b></b></i><span>Koshi Sawai<small>Portfolio</small></span></a><nav aria-label="メイン"><a href="#town" id="nav-town">街を歩く</a><a href="#works" id="nav-works">作品一覧</a></nav><button id="profile" class="profile"><span class="person-icon" aria-hidden="true"></span>プロフィール</button></header>
 <main id="layout">
 <section class="map-panel" aria-labelledby="scene-title">
-  <div class="scene-heading"><div class="map-edition"><i></i><span id="scene-kicker">RIVERSIDE TOWN</span></div><h1 id="scene-title">川辺の制作街<span class="title-stop">.</span></h1><p id="scene-desc">小さな街を歩いて、3つの作品を巡る。</p></div>
+  <div class="scene-heading"><div class="map-edition"><i></i><span id="scene-kicker">RIVERSIDE TOWN</span></div><h1 id="scene-title" tabindex="-1">川辺の制作街<span class="title-stop">.</span></h1><p id="scene-desc">小さな街を歩いて、3つの作品を巡る。</p></div>
   <div class="map-tools"><button id="zoom-in" aria-label="地図を拡大">＋</button><button id="zoom-out" aria-label="地図を縮小">−</button></div>
   <div id="world"><canvas id="map" tabindex="0" aria-label="歩ける街。矢印キーかWASDで歩き、入口でEまたはEnterを押す。作品一覧からも入室できます。"></canvas><div id="pins"></div></div>
   <div class="map-bottom"><span class="location"><i></i><span id="location">現在地　川沿いの広場</span></span><button id="action" hidden>建物に入る</button><div class="scale" aria-hidden="true"><b></b><span id="scale">町内図</span></div></div>
 </section>
 <aside id="panel" aria-label="街と作品の案内"></aside>
+<section id="works-page" hidden aria-labelledby="works-title"></section>
 </main>
 <footer><span>© Koshi Sawai</span><span>川辺の制作街 <b>/</b> Riverside Town</span></footer>
 <dialog id="bio"><form method="dialog"><button class="close" aria-label="閉じる">×</button></form><div class="map-edition"><i></i>PROFILE</div><h2>澤井 航志</h2><p class="latin-name">Koshi Sawai</p><p>立命館大学 理工学部 電子情報工学科。飲食店で感じた課題をデータで考えたり、Unityで遊びの手触りを試したりしています。</p><p>この街の3つの建物には、それぞれの作品と、作る途中で考えたことを展示しています。</p><button id="bio-go" class="solid">街へ戻る</button></dialog>
 <div class="sr" id="sr" role="status" aria-live="polite"></div>
+<dialog id="exhibition" aria-labelledby="exhibit-title">
+  <div class="exhibit-header"><p id="exhibit-venue" class="map-edition"></p><button class="close" id="close-exhibit" aria-label="展示を閉じる">×</button></div>
+  <h2 id="exhibit-title" tabindex="-1"></h2><p id="exhibit-about"></p>
+  <div id="exhibit-demo"></div>
+  <div class="dialog-actions"><button id="to-room">室内へ戻る</button><button id="to-door" class="solid">入口の外へ戻る</button></div>
+</dialog>
 <noscript>街を歩くにはJavaScriptを有効にしてください。展示作品は、待ち時間予測「おまちどう」、Unityゲーム「BushDush V2」、理美容店サイト「SISTER」です。</noscript>
-<script src="projects.js"></script><script src="scene.js"></script><script src="app.js"></script></body></html>
+<script src="projects.js"></script><script src="scene.js"></script><script src="walking.js"></script><script src="map.js"></script><script src="exhibits.js"></script><script src="app.js"></script></body></html>
 

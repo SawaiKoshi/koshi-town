@@ -144,11 +144,11 @@ function bridge(p,x,end){
     p.line([[xx,y0,.46],[xx,y1,.46]],"#80694c",.072);p.line([[xx,y0,.29],[xx,y1,.29]],"#9b805d",.037);}
 }
 function boat(p,x,y,col){const coords=[[-.6,0],[-.35,-.19],[.39,-.16],[.61,0],[.39,.16],[-.35,.19]];p.poly(coords.map(([a,b])=>[x+a,y+b,-.24]),col);p.poly(coords.map(([a,b])=>[x+a*.78,y+b*.63,-.23]),"#645d48");for(let a of [-.25,.15])p.line([[x+a,y-.12,-.21],[x+a,y+.12,-.21]],"#e8d0a0",.06);}
-function avatar(p,x,y,phase,moving) {
+function avatar(p,x,y,phase,moving,bodyScale=1) {
   const [u,v]=iso(x,y,.06),c=p.c;
   p.ellipse(x,y,.075,.26,.105,"rgba(49,60,47,.27)");
   const step=moving?Math.sin(phase)*.045:0;
-  c.save();c.translate(u,v);
+  c.save();c.translate(u,v);c.scale(bodyScale,bodyScale);
   const pill=(xx,yy,rx,ry,color)=>{c.beginPath();c.ellipse(xx,yy,rx,ry,0,0,Math.PI*2);c.fillStyle=color;c.fill();c.lineWidth=.028;c.strokeStyle="#343f35";c.stroke();};
   pill(-.068,-.085+step,.064,.088,"#3d4e52");pill(.074,-.085-step,.064,.088,"#3d4e52");
   pill(0,-.25,.139,.17,"#d87744");pill(-.115,-.24-step,.046,.086,"#e8ab74");pill(.124,-.24+step,.045,.086,"#e8ab74");
@@ -178,15 +178,15 @@ function parasol(p,x,y){
 }
 function kiosk(p,x,y){p.box(x,y,.06,.38,.38,.76,"#b65943");p.box(x-.045,y-.045,.84,.47,.47,.11,"#a74734");p.front(x+.07,y+.39,.59,.24,.065,"#564b3e");}
 function townObjects(){
-  const out=[],add=(depth,draw)=>out.push({depth,draw});
-  for(const b of [...HOUSES,...PROJECTS]){let [x,y,w,d]=b.lot;add(x+y+w+d-.20,p=>building(p,b));}
+  const out=[],add=(depth,draw,lot,buildingData)=>out.push({depth,draw,lot,buildingData});
+  for(const b of [...HOUSES,...PROJECTS]){let [x,y,w,d]=b.lot;add(x+y+w+d-.20,p=>building(p,b),b.lot,b);}
   for(const [a,b] of BRIDGES)add(a+9.58,p=>bridge(p,a,b));
   const trees=[[.62,2.85,.92],[5.3,.54,1.08],[9.62,.65,1.08],[13.82,1.01,1.25],[14.18,2.73,1.12],[.8,6.28,1],[.7,8.03,.8],[7.83,5.75,.72],[13.77,5.35,1.13],[14.27,7.13,1.05],[1.0,12.75,1.25],[2.18,13.83,1.05],[.8,14.05,.86],[3.42,12.32,.92],[6.56,13.34,1.03],[8.05,14.05,1.20],[10.1,12.94,.84],[13.72,12.67,1.25],[14.36,14.19,1.12]];
-  trees.forEach(([x,y,s],i)=>add(x+y,p=>tree(p,x,y,s,i*53+12,i%7===0?"gold":i%11===0?"flower":"round")));
-  for(const [x,y] of [[1.8,7.85],[7.1,8.32],[10.4,11.3],[3.33,13.03],[8.52,12.17]])add(x+y+.35,p=>bench(p,x,y));
-  for(const [x,y] of [[4.15,8.45],[6.6,8.48],[11.28,8.35],[13.37,11.2],[4.61,11.28],[8.7,5.24]])add(x+y,p=>lamp(p,x,y));
-  for(const [x,y] of [[.45,7.1],[9.25,5.35],[6.72,12.53],[2.1,11.83]])add(x+y+.35,p=>planter(p,x,y,.025,.9));
-  add(14.3,p=>kiosk(p,6.25,7.8));add(23.95,p=>parasol(p,10.1,13.85));return out.sort((a,b)=>a.depth-b.depth);
+  trees.forEach(([x,y,s],i)=>add(x+y,p=>tree(p,x,y,s,i*53+12,i%7===0?"gold":i%11===0?"flower":"round"),[x-.07,y-.07,.14,.14]));
+  for(const [x,y] of [[1.8,7.85],[7.1,8.32],[10.4,11.3],[3.33,13.03],[8.52,12.17]])add(x+y+.35,p=>bench(p,x,y),[x,y,1.04,.3]);
+  for(const [x,y] of [[4.15,8.45],[6.6,8.48],[11.28,8.35],[13.37,11.2],[4.61,11.28],[8.7,5.24]])add(x+y,p=>lamp(p,x,y),[x-.055,y-.055,.11,.11]);
+  for(const [x,y] of [[.45,7.1],[9.25,5.35],[6.72,12.53],[2.1,11.83]])add(x+y+.35,p=>planter(p,x,y,.025,.9),[x,y,.9,.24]);
+  add(14.3,p=>kiosk(p,6.25,7.8),[6.25,7.8,.38,.38]);add(23.95,p=>parasol(p,10.1,13.85),[10.05,13.8,.1,.1]);return out.sort((a,b)=>a.depth-b.depth);
 }
 function roomGround(p,project){
   const [w,d]=ROOM_SIZE;
@@ -205,20 +205,20 @@ function roomGround(p,project){
   for(let i=0;i<12;i++)p.line([[2.67+i*.218,5.10,.034],[2.67+i*.218,5.22,.034]],"#e8d6b2",.025);
 }
 function roomObjects(b){
-  const objects=[],add=(x,y,draw)=>objects.push({depth:x+y,draw});
-  add(1,1.31,p=>{p.box(.55,.55,.05,3.0,.76,.83,"#ad8860");p.box(.48,.49,.88,3.14,.89,.13,"#d5b88b");});
+  const objects=[],add=(x,y,draw,lot)=>objects.push({depth:x+y,draw,lot});
+  add(1,1.31,p=>{p.box(.55,.55,.05,3.0,.76,.83,"#ad8860");p.box(.48,.49,.88,3.14,.89,.13,"#d5b88b");},[.48,.49,3.14,.89]);
   if(b.form==="diner"){
     add(2.9,1.5,p=>{for(let i=0;i<4;i++){let x=1+i*.56;p.ellipse(x,.9,1.03,.17,.07,"#f9ecd4",INK);p.ellipse(x,.9,1.041,.08,.03,"#c18352");}});
-    add(5.6,2.43,p=>{p.box(4.7,.78,.03,1.75,.91,.83,"#976e4c");p.box(4.59,.68,.87,1.97,1.07,.1,"#e4c497");p.front(5.1,1.77,.45,.98,.29,"#bd6348");});
+    add(5.6,2.43,p=>{p.box(4.7,.78,.03,1.75,.91,.83,"#976e4c");p.box(4.59,.68,.87,1.97,1.07,.1,"#e4c497");p.front(5.1,1.77,.45,.98,.29,"#bd6348");},[4.59,.68,1.97,1.07]);
   }else if(b.form==="studio"){
     add(2.9,1.5,p=>{p.box(.9,.66,1.04,1.24,.14,.71,"#536768");p.front(.98,.81,1.14,1.06,.49,"#a8c6ad");p.front(1.15,.82,1.26,.21,.15,"#598677");p.box(.99,1.03,1.03,.89,.24,.04,"#667575");});
-    add(5.8,2.33,p=>{for(let i=0;i<2;i++){let x=4.5+i*.91;p.box(x,.73,.03,.78,.88,1.43,"#607c80");p.front(x+.08,1.62,.75,.61,.49,"#b7c8a0");p.front(x+.09,1.63,.39,.60,.20,"#3c5c62");}});
+    add(5.8,2.33,p=>{for(let i=0;i<2;i++){let x=4.5+i*.91;p.box(x,.73,.03,.78,.88,1.43,"#607c80");p.front(x+.08,1.62,.75,.61,.49,"#b7c8a0");p.front(x+.09,1.63,.39,.60,.20,"#3c5c62");}},[4.5,.73,1.69,.88]);
   }else{
     add(2.9,1.5,p=>{for(let i=0;i<4;i++)p.box(.9+i*.33,.85,1.04,.14,.13,.26+(i%2)*.09,i%2?"#979d73":"#ad8661");});
-    add(5.8,2.33,p=>{p.box(4.65,1.05,.06,1.14,1.1,.51,"#826c52");p.box(4.59,1.00,.54,1.25,1.1,.17,"#738571");p.box(4.59,1.00,.68,1.25,.18,.66,"#81927a");});
+    add(5.8,2.33,p=>{p.box(4.65,1.05,.06,1.14,1.1,.51,"#826c52");p.box(4.59,1.00,.54,1.25,1.1,.17,"#738571");p.box(4.59,1.00,.68,1.25,.18,.66,"#81927a");},[4.59,1,1.25,1.15]);
   }
-  add(1.0,4.6,p=>{p.box(.65,4.18,.06,.49,.47,.57,"#ae7959");tree(p,.89,4.41,.85,69);});
-  add(5.9,4.25,p=>{p.box(5.78,3.54,.045,.86,.69,.8,"#ad926e");p.box(5.68,3.46,.85,1.07,.82,.11,"#e8d1a6");p.front(5.9,4.30,.61,.64,.19,b.color);p.box(5.88,3.64,.98,.6,.45,.09,b.color);});
+  add(1.0,4.6,p=>{p.box(.65,4.18,.06,.49,.47,.57,"#ae7959");tree(p,.89,4.41,.85,69);},[.65,4.18,.49,.47]);
+  add(5.9,4.25,p=>{p.box(5.78,3.54,.045,.86,.69,.8,"#ad926e");p.box(5.68,3.46,.85,1.07,.82,.11,"#e8d1a6");p.front(5.9,4.30,.61,.64,.19,b.color);p.box(5.88,3.64,.98,.6,.45,.09,b.color);},[5.68,3.46,1.07,.84]);
   return objects.sort((a,b)=>a.depth-b.depth);
 }
 
