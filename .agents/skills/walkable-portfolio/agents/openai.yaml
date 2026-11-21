@@ -1,0 +1,4 @@
+interface:
+  display_name: "Walkable Portfolio"
+  short_description: "Build and extend a walkable isometric portfolio town"
+  default_prompt: "Use $walkable-portfolio to add a project and an enterable building to my town."
