@@ -1,25 +1,185 @@
-(()=>{
-const {renderer,scene,camera,buildings,height,bridgeY,road}=town,canvas=renderer.domElement,keys=new Set();
-const views={bridge:[-.65,22,.015,.012],sister:[1.0,8.7,-.90,.15],pisola:[-4.3,-2.5,.95,.14],hill:[-.95,-20.9,-.28,.10]};
-const entrances=[
- {label:'SISTERの入口',x:4.25,z:4.45},
- {label:'PISOLAの入口',x:-8.05,z:-4.1},
- {label:'ゲーム展示館の入口',x:2.15,z:-32.55}
-];
-let x,z,yaw,pitch,dirty=true,drag=null,last=performance.now();
-function jump(name){[x,z,yaw,pitch]=views[name]||views.bridge;keys.clear();dirty=true}
-jump(location.hash.slice(1));const select=document.querySelector('#views');select.onchange=()=>{if(select.value)jump(select.value);select.value='';canvas.focus()};
-function free(x,z){if(z>30||z< -33.15||!road(x,z,.24))return false;
-return !buildings.some(b=>{const dx=x-b.x,dz=z-b.z,c=Math.cos(b.a),s=Math.sin(b.a);return Math.abs(dx*c-dz*s)<b.w/2+.24&&Math.abs(dx*s+dz*c)<b.d/2+.24})}
-const aliases={arrowup:'w',arrowdown:'s',arrowleft:'a',arrowright:'d'};
-function key(e,down){if(e.target===select)return;const k=aliases[e.key.toLowerCase()]||e.key.toLowerCase();if(!['w','a','s','d','q','e'].includes(k))return;e.preventDefault();if(down)keys.add(k);else keys.delete(k)}
-onkeydown=e=>key(e,true);onkeyup=e=>key(e,false);onblur=()=>{keys.clear();drag=null};document.querySelectorAll('[data-key]').forEach(btn=>{btn.onpointerdown=e=>{btn.setPointerCapture(e.pointerId);keys.add(btn.dataset.key)};btn.onlostpointercapture=()=>keys.delete(btn.dataset.key)});
-canvas.onpointerdown=e=>{canvas.focus();canvas.setPointerCapture(e.pointerId);drag=[e.clientX,e.clientY]};
-canvas.onpointermove=e=>{if(!drag)return;yaw-=(e.clientX-drag[0])*.005;pitch=Math.max(-.85,Math.min(.86,pitch-(e.clientY-drag[1])*.004));drag=[e.clientX,e.clientY];dirty=true};
-canvas.onlostpointercapture=()=>drag=null;
-function size(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.fov=innerWidth<600?78:60;camera.updateProjectionMatrix();dirty=true}onresize=size;size();
-function frame(now){const dt=Math.min(.06,(now-last)/1000);last=now;let f=Number(keys.has('w'))-Number(keys.has('s')),r=Number(keys.has('d'))-Number(keys.has('a')),turn=Number(keys.has('q'))-Number(keys.has('e'));yaw+=turn*dt*1.6;if(f||r){const speed=4.7*dt/Math.hypot(f,r),nx=x+(-Math.sin(yaw)*f+Math.cos(yaw)*r)*speed,nz=z+(-Math.cos(yaw)*f-Math.sin(yaw)*r)*speed;if(free(nx,z))x=nx;if(free(x,nz))z=nz}
-if(f||r||turn||dirty){camera.position.set(x,2.02+height(z)+bridgeY(z),z);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);renderer.render(scene,camera);
- const door=entrances.find(d=>Math.hypot(x-d.x,z-d.z)<1.4);
- document.querySelector('#place').textContent=door?.label||(z>9?'石橋':z<-27?'丘の前庭':z<-9?'丘へ続く坂道':'川沿いの路地');dirty=false}requestAnimationFrame(frame)}requestAnimationFrame(frame)
+(() => {
+  const {renderer, scene, camera, buildings, height, bridgeY, road} = town;
+  const canvas = renderer.domElement;
+  const views = {
+    bridge: [-.65,22,.015,.012], sister: [1,8.7,-.90,.15],
+    pisola: [-4.3,-2.5,.95,.14], hill: [-.95,-20.9,-.28,.10]
+  };
+  const doors = [
+    ['SISTERの入口',4.25,4.45], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
+  ];
+  const select = document.querySelector('#views');
+  const keys = new Set(), pointers = new Map(), padKeys = new Map();
+  const aliases = {arrowup:'w', arrowdown:'s', arrowleft:'a', arrowright:'d'};
+  const clamp = THREE.MathUtils.clamp;
+  const start = location.hash.slice(1);
+  let [x,z,yaw,pitch] = Object.hasOwn(views,start) ? views[start] : views.bridge;
+  // This rig has its own focus, lens and orbit. Walking coordinates stay in metres.
+  const orbit = {x:0, z:-4, bearing:-.45, elevation:.47, distance:62};
+  let overview = false, dirty = true, last = performance.now();
+
+  function clearInput() {
+    for (const [id,btn] of padKeys) if (btn.hasPointerCapture(id)) btn.releasePointerCapture(id);
+    for (const id of pointers.keys()) if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+    keys.clear(); padKeys.clear(); pointers.clear();
+  }
+  function size() {
+    renderer.setSize(innerWidth, innerHeight, false);
+    camera.aspect = innerWidth / innerHeight;
+    camera.fov = overview ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
+    camera.updateProjectionMatrix();
+    dirty = true;
+  }
+  function mode(next) {
+    if (next === overview) return;
+    clearInput();
+    overview = next;
+    document.body.classList.toggle('overview', next);
+    for (const b of document.querySelectorAll('[data-mode]')) {
+      b.setAttribute('aria-pressed', String((b.dataset.mode === 'overview') === next));
+    }
+    select.parentElement.hidden = next;
+    document.querySelector('#pad').hidden = next;
+    document.querySelector('#desktop-help').textContent = next
+      ? 'ドラッグで回転　ホイールでズーム　右ドラッグ・矢印で移動'
+      : 'WASD・矢印で歩く　ドラッグで見回す';
+    document.querySelector('#touch-help').textContent = next
+      ? '1本指で回転　2本指で移動・ピンチでズーム'
+      : '方向ボタンで歩く　ドラッグで見回す';
+    size();
+    canvas.focus({preventScroll:true});
+  }
+  for (const b of document.querySelectorAll('[data-mode]')) {
+    const activate = () => mode(b.dataset.mode === 'overview');
+    b.onclick = activate;
+    // After a canvas drag some touch browsers suppress the next compatibility click.
+    // Accept a completed tap as well; mode() is idempotent when both events fire.
+    let tap;
+    b.onpointerdown = e => {
+      if (e.pointerType === 'touch') tap = {id:e.pointerId,x:e.clientX,y:e.clientY};
+    };
+    b.onpointercancel = () => { tap = null };
+    b.onpointerup = e => {
+      if (tap?.id === e.pointerId && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<10) activate();
+      tap = null;
+    };
+  }
+  select.onchange = () => {
+    clearInput();
+    if (select.value) [x,z,yaw,pitch] = views[select.value];
+    select.value = ''; dirty = true; canvas.focus();
+  };
+  function free(px,pz) {
+    if (pz > 30 || pz < -33.15 || !road(px,pz,.24)) return false;
+    return !buildings.some(b => {
+      const dx=px-b.x, dz=pz-b.z, c=Math.cos(b.a), s=Math.sin(b.a);
+      return Math.abs(dx*c-dz*s)<b.w/2+.24 && Math.abs(dx*s+dz*c)<b.d/2+.24;
+    });
+  }
+  function pan(right,forward) {
+    const c = Math.cos(orbit.bearing), s = Math.sin(orbit.bearing);
+    orbit.x = clamp(orbit.x + right*c - forward*s,-18,18);
+    orbit.z = clamp(orbit.z - right*s - forward*c,-39,20);
+  }
+  function zoom(factor) { orbit.distance = clamp(orbit.distance * factor,15,74); dirty = true }
+  function key(e, down) {
+    const k = aliases[e.key.toLowerCase()] || e.key.toLowerCase();
+    if (!['w','a','s','d','q','e','+','=','-'].includes(k)) return;
+    if (!down) { keys.delete(k); return }
+    if (e.target === select || e.ctrlKey || e.metaKey || e.altKey) return;
+    e.preventDefault();
+    if (!e.repeat) keys.add(k);
+  }
+  onkeydown = e => key(e,true); onkeyup = e => key(e,false);
+  onblur = clearInput;
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput() });
+  for (const b of document.querySelectorAll('[data-key]')) {
+    b.onpointerdown = e => { b.setPointerCapture(e.pointerId); padKeys.set(e.pointerId,b) };
+    b.onlostpointercapture = e => padKeys.delete(e.pointerId);
+  }
+  canvas.oncontextmenu = e => e.preventDefault();
+  canvas.onwheel = e => {
+    if (!overview) return;
+    e.preventDefault();
+    const pixels = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
+    zoom(Math.exp(clamp(pixels,-240,240)*.0016));
+  };
+  canvas.onpointerdown = e => {
+    canvas.focus(); canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  };
+  canvas.onlostpointercapture = e => pointers.delete(e.pointerId);
+  function pair() {
+    const [a,b] = pointers.values();
+    return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, span:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))};
+  }
+  canvas.onpointermove = e => {
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    const two = pointers.size === 2 && overview;
+    const old = two && pair(), dx=e.clientX-p.x, dy=e.clientY-p.y;
+    p.x=e.clientX; p.y=e.clientY;
+    if (pointers.size > 2) return;
+    const units = 2 * orbit.distance * Math.tan(camera.fov*Math.PI/360) / innerHeight;
+    if (two) {
+      const now = pair();
+      pan((old.x-now.x)*units,(now.y-old.y)*units);
+      zoom(old.span/now.span);
+    } else if (overview && (e.buttons === 2 || e.shiftKey)) {
+      pan(-dx*units,dy*units);
+    } else if (overview) {
+      orbit.bearing -= dx*.006;
+      orbit.elevation = clamp(orbit.elevation+dy*.004,.30,1.24);
+    } else if (pointers.size === 1) {
+      yaw -= dx*.005;
+      pitch = clamp(pitch-dy*.004,-.85,.86);
+    }
+    dirty=true;
+  };
+  function renderCamera() {
+    let place;
+    if (overview) {
+      // A portrait lens needs more horizontal clearance for both riverside facades.
+      const distance = orbit.distance * Math.max(1,.52/camera.aspect);
+      const horizontal = distance*Math.cos(orbit.elevation);
+      const y = height(orbit.z)+1;
+      camera.position.set(orbit.x+Math.sin(orbit.bearing)*horizontal,y+distance*Math.sin(orbit.elevation),
+        orbit.z+Math.cos(orbit.bearing)*horizontal);
+      camera.lookAt(orbit.x,y,orbit.z);
+      place='街区の俯瞰';
+    } else {
+      camera.position.set(x,2.02+height(z)+bridgeY(z),z);
+      camera.rotation.set(pitch,yaw,0,'YXZ');
+      const door=doors.find(([,dx,dz]) => Math.hypot(x-dx,z-dz)<1.4);
+      place=door?.[0] || (z>9?'石橋':z<-27?'丘の前庭':z<-9?'丘へ続く坂道':'川沿いの路地');
+    }
+    document.querySelector('#place').textContent=place;
+    renderer.render(scene,camera); dirty=false;
+  }
+  function frame(now) {
+    const dt=Math.min(.06,(now-last)/1000); last=now;
+    const down = k => {
+      if (keys.has(k)) return true;
+      for (const b of padKeys.values()) if (b.dataset.key === k) return true;
+      return false;
+    };
+    const f=down('w')-down('s'), r=down('d')-down('a'), turn=down('q')-down('e');
+    if (overview) {
+      if (f || r) pan(r*dt*orbit.distance*.28,f*dt*orbit.distance*.28);
+      orbit.bearing+=turn*dt;
+      const magnify=down('-')-(down('+')||down('='));
+      if (magnify) zoom(Math.exp(magnify*dt));
+    } else {
+      yaw+=turn*dt*1.6;
+      if (f || r) {
+        const step=4.7*dt/Math.hypot(f,r);
+        const nx=x+(-Math.sin(yaw)*f+Math.cos(yaw)*r)*step, nz=z+(-Math.cos(yaw)*f-Math.sin(yaw)*r)*step;
+        if (free(nx,z)) x=nx;
+        if (free(x,nz)) z=nz;
+      }
+    }
+    if (f || r || turn || dirty) renderCamera();
+    requestAnimationFrame(frame);
+  }
+  onresize=size; size(); requestAnimationFrame(frame);
 })();

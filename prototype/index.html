@@ -1,8 +1,29 @@
 <!doctype html>
-<html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>川辺の制作街 ｜ 街区を歩く</title><link rel="stylesheet" href="town.css">
-<body><canvas id="world" aria-label="ドラッグで見回せる立体の街区" tabindex="0"></canvas>
-<header><span>川辺の制作街</span><small>街区を歩く</small></header>
-<nav aria-label="視点を移す"><select id="views" aria-label="視点を移す"><option value="">視点を移す</option><option value="bridge">石橋</option><option value="sister">SISTERの店先</option><option value="pisola">PISOLAの入口</option><option value="hill">丘の前庭</option></select></nav>
-<footer><strong id="place">石橋</strong><span class="desktop">WASD・矢印で歩く　ドラッグで見回す</span><span class="mobile">方向ボタンで歩く　ドラッグで見回す</span></footer>
-<div id="pad" aria-label="歩行操作"><button data-key="w" aria-label="前進">▲</button><button data-key="a" aria-label="左へ">◀</button><button data-key="s" aria-label="後退">▼</button><button data-key="d" aria-label="右へ">▶</button></div>
-<script src="vendor/three.min.js"></script><script src="town.js"></script><script src="walk.js"></script></body></html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>川辺の制作街 ｜ 街区を歩く</title>
+<link rel="stylesheet" href="town.css">
+<body>
+<canvas id="world" aria-label="川辺の制作街の3D風景" tabindex="0"></canvas>
+<header>
+  <h1>川辺の制作街</h1>
+  <div class="modes" role="group" aria-label="カメラモード">
+    <button data-mode="walk" aria-pressed="true">歩く</button>
+    <button data-mode="overview" aria-pressed="false">街を眺める</button>
+  </div>
+</header>
+<nav aria-label="撮影地点">
+  <select id="views" aria-label="視点を移す"><option value="">視点を移す</option><option value="bridge">石橋</option><option value="sister">SISTERの店先</option><option value="pisola">PISOLAの入口</option><option value="hill">丘の前庭</option></select>
+</nav>
+<footer>
+  <strong id="place">石橋</strong>
+  <span id="desktop-help">WASD・矢印で歩く　ドラッグで見回す</span>
+  <span id="touch-help">方向ボタンで歩く　ドラッグで見回す</span>
+</footer>
+<div id="pad" role="group" aria-label="歩行操作">
+  <button data-key="w" aria-label="前進">▲</button><button data-key="a" aria-label="左へ">◀</button>
+  <button data-key="s" aria-label="後退">▼</button><button data-key="d" aria-label="右へ">▶</button>
+</div>
+<script src="vendor/three.min.js"></script><script src="town.js"></script><script src="walk.js"></script>
+</body></html>
