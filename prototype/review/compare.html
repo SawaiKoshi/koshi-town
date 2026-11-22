@@ -15,21 +15,25 @@
   figcaption { padding: .6rem 0; font-weight: 600 }
   img { display: block; width: 100%; height: auto; border-radius: 4px }
   .mobile { max-width: 790px }
+  .overview-shot { grid-column: 1 / -1 }
+  .mobile .overview-shot { max-width: 375px }
   [hidden] { display: none }
   @media(max-width:640px){ body { padding: 12px } .desktop { grid-template-columns: 1fr } .pair { gap: .5rem } }
 </style>
-<header><h1>石橋からの眺め</h1><a href="walk.html">街を歩く →</a></header>
+<header><h1>石橋と街区の俯瞰</h1><a href="walk.html">街を開く →</a></header>
 <div class="options" role="group" aria-label="撮影サイズ">
   <label><input type="radio" name="size" value="desktop" checked> PC · 1280 × 800</label>
   <label><input type="radio" name="size" value="mobile"> スマホ · 375 × 812</label>
 </div>
 <section class="pair desktop" aria-label="PCの比較">
-  <figure><figcaption>変更前</figcaption><img src="before-bridge-1280.jpg" alt="直線的な坂と広場を石橋から見た変更前の街区"></figure>
-  <figure><figcaption>変更後</figcaption><img src="bridge-1280.jpg" alt="段花壇に沿って曲がる坂と、夕日の当たる石積み"></figure>
+  <figure><figcaption>石橋 · 変更前</figcaption><img src="before-bridge-1280.jpg" alt="前回レビューした石橋からの眺め"></figure>
+  <figure><figcaption>石橋 · 変更後</figcaption><img src="bridge-1280.jpg" alt="川岸の枝越しに見えるPISOLA、石畳とSISTERの店先"></figure>
+  <figure class="overview-shot"><figcaption>街を眺める · 初期視点</figcaption><img src="overview-1280.jpg" alt="川の手前から石橋、両店、丘の展示館までを見渡した俯瞰"></figure>
 </section>
 <section class="pair mobile" aria-label="スマートフォン幅の比較" hidden>
   <figure><figcaption>変更前</figcaption><img src="before-bridge-375.jpg" alt="375px幅で撮影した変更前の石橋"></figure>
   <figure><figcaption>変更後</figcaption><img src="bridge-375.jpg" alt="同じ縦画角で花壇の間を抜ける坂を見た変更後の石橋"></figure>
+  <figure class="overview-shot"><figcaption>街を眺める · 初期視点</figcaption><img src="overview-375.jpg" alt="375px幅で川、橋、3店舗を収めた俯瞰"></figure>
 </section>
 <script>
   document.querySelector('.options').addEventListener('change', event => {
