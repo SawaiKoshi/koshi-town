@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>石橋からの眺め ｜ 川辺の制作街</title>
+<style>
+  * { box-sizing: border-box }
+  body { max-width: 1440px; margin: 0 auto; padding: 20px; color: #292d28; background: #f8f4ec; font: 1rem/1.5 system-ui,sans-serif }
+  header, .options { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem }
+  header { justify-content: space-between; margin-bottom: 1rem }
+  h1 { margin: 0; font: 600 1.4rem/1.4 serif }
+  a, input { accent-color: #325642; color: #325642 }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem }
+  figure { margin: 0 }
+  figcaption { padding: .6rem 0; font-weight: 600 }
+  img { display: block; width: 100%; height: auto; border-radius: 4px }
+  .mobile { max-width: 790px }
+  [hidden] { display: none }
+  @media(max-width:640px){ body { padding: 12px } .desktop { grid-template-columns: 1fr } .pair { gap: .5rem } }
+</style>
+<header><h1>石橋からの眺め</h1><a href="walk.html">街を歩く →</a></header>
+<div class="options" role="group" aria-label="撮影サイズ">
+  <label><input type="radio" name="size" value="desktop" checked> PC · 1280 × 800</label>
+  <label><input type="radio" name="size" value="mobile"> スマホ · 375 × 812</label>
+</div>
+<section class="pair desktop" aria-label="PCの比較">
+  <figure><figcaption>変更前</figcaption><img src="before-bridge-1280.jpg" alt="直線的な坂と広場を石橋から見た変更前の街区"></figure>
+  <figure><figcaption>変更後</figcaption><img src="bridge-1280.jpg" alt="段花壇に沿って曲がる坂と、夕日の当たる石積み"></figure>
+</section>
+<section class="pair mobile" aria-label="スマートフォン幅の比較" hidden>
+  <figure><figcaption>変更前</figcaption><img src="before-bridge-375.jpg" alt="375px幅で撮影した変更前の石橋"></figure>
+  <figure><figcaption>変更後</figcaption><img src="bridge-375.jpg" alt="同じ縦画角で花壇の間を抜ける坂を見た変更後の石橋"></figure>
+</section>
+<script>
+  document.querySelector('.options').addEventListener('change', event => {
+    for (const section of document.querySelectorAll('.pair')) {
+      section.hidden = !section.classList.contains(event.target.value);
+    }
+  });
+</script>
+</html>
