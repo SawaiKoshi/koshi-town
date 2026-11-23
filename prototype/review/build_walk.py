@@ -6,7 +6,7 @@ root = review.parent
 html = (root / "index.html").read_text(encoding="utf-8")
 css = (root / "town.css").read_text(encoding="utf-8")
 html = html.replace('<link rel="stylesheet" href="town.css">', f"<style>{css}</style>")
-for name in ("vendor/three.min.js", "town.js", "walk.js"):
+for name in ("vendor/three.min.js", "neighborhood.js", "town.js", "walk.js"):
     script = (root / name).read_text(encoding="utf-8")
     html = html.replace(f'<script src="{name}"></script>', f"<script>{script}</script>")
 license_text = (root / "vendor/three-LICENSE.txt").read_text(encoding="utf-8")

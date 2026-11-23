@@ -133,7 +133,9 @@ function glazing(top,inside,lit){
 const stone=['#d8c2a6','#efdab8','#d4bba2','#c3a99a','#d0b5a1'];
 const green=['#778b46','#98a84c','#586e45','#859852'];
 function smooth(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)}
-const height=z=>1.76*smooth((-z-8)/9)+3.9*smooth((-z-16)/14);
+const height=z=>1.76*smooth((-z-8)/9)+3.9*smooth((-z-16)/14)
+ +3.1*smooth((-z-44)/10)+3.6*smooth((-z-54)/10)+5.2*smooth((-z-65)/16);
+const quarter=planNeighborhood(height);
 // Folded, faceted leaves and small stepped whorls of flowers share two meshes.
 function herbGeometry(flower){
  const vertices=[],colors=[];
@@ -170,7 +172,9 @@ geos.herb=herbGeometry(false);geos.spike=herbGeometry(true);
 finishes.herb=finishes.spike=new T.MeshLambertMaterial({vertexColors:true,side:T.DoubleSide});
 function bush(x,y,z,s,flowers=false){
  const bloom=pick(['#b580e4','#a882d1','#d18cc6','#d156a4','#f5c150']);
- const count=flowers?9:4;
+ const m=transform.elements,wx=m[0]*x+m[8]*z+m[12],wz=m[2]*x+m[10]*z+m[14];
+ const distant=Math.abs(wx)>19||wz< -36;
+ const count=flowers?(distant?4:9):(distant?2:4);
  for(let i=0;i<count;i++){
    const a=i*2.4+.5*rand(),r=Math.sqrt(i/count)*s*.46,px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r;
    const h=s*(.33+rand()*.24);
@@ -284,6 +288,11 @@ const water=new T.Mesh(new T.PlaneGeometry(170,16),new T.ShaderMaterial({
 }));
 water.rotation.x=-Math.PI/2;water.scale.set(3,1.44,1);water.position.set(0,-2.18,16.8);scene.add(water);
 const bankZ=x=>9.90+smooth((Math.abs(x)-2.4)/7)*(1.12*Math.sin(x*.28)+.72*Math.sin(x*.46));
+function terrain(x,z){
+ const verge=smooth((Math.abs(x)-32)/17);
+ return height(z)+verge*(2.7+1.8*Math.sin(z*.094+x*.04))
+   +smooth((-z-80)/22)*(3.8+3.2*Math.sin(x*.12)+2.4*Math.cos(x*.20));
+}
 // One continuous hillside keeps the grazing sunlight smooth between the terraces.
 // Separate banks leave the riverbed open under the bridge.
 function riverbank(north){
@@ -291,7 +300,7 @@ function riverbank(north){
  const cols=77,rows=north?77:30;
  for(let i=0;i<=rows;i++)for(let j=0;j<=cols;j++){
    const x=(j-cols/2)*4.15,edge=north?bankZ(x):24+.65*Math.sin(x*.16);
-   const z=edge+(north?-1:1)*i*2.1,y=north?height(z):0;
+   const z=edge+(north?-1:1)*i*2.1,y=north?terrain(x,z):0;
    positions.push(x,y-.051,z);uv.push(x*.24,z*.24);
    const t=.5+.21*Math.sin(x*.93+z*.43)+.22*Math.sin(z*.96-x*.25);
    const color=new T.Color().lerpColors(new T.Color('#93915e'),new T.Color('#b5ae78'),t);
@@ -317,9 +326,9 @@ for(const z of [9,14,19,24.8])for(const x of [-2.34,2.34]){box(x,bridgeY(z)+.45,
 // Each cross-section joins both shop forecourts to the uphill lane.
 // Interpolating the two edges also gives the paving and walking limits the same bends.
 const sections=[
- [-35,-5.7,9.5],[-31,-3.8,3.9],[-25,.2,4.7],[-20,-1.7,3.1],
- [-15,-5.1,-.3],[-10,-4.3,1.1],[-6,-9.6,3.4],[-3.2,-9.1,4.3],
- [.5,-2.3,3.7],[3.7,-3.3,7.5],[6,-3.6,6.7],[9,-2.14,2.14]
+ [-35,-5.7,9.5],[-31,-3.8,4.4],[-25,.25,4.5],[-21,-1.2,2.6],[-19,-2.75,1.6],
+ [-15,-4.3,-.8],[-10,-3.65,1.0],[-6,-9.8,3.3],[-3.2,-9.3,4.45],
+ [.5,-1.85,2.8],[3.7,-3.4,7.8],[6,-3.65,6.9],[9,-2.14,2.14]
 ];
 function edges(z){
  if(z>=9)return [-2.14,2.14];
@@ -354,6 +363,71 @@ for(let j=0;j<203;j++){
    for(let s=0;s<4;s++)face(rim[s],rim[(s+1)%4],top[(s+1)%4],top[s],color);
  }
 }
+// Mitered cross-sections give each alley a continuous paved corner. Lay the
+// smaller cobbles into the same mesh as the main street, below the junction paving.
+for(const path of [...quarter.lanes,...quarter.approaches]){
+ const narrow=path.width<1.2,normals=path.segments.map(s=>{
+   const len=Math.sqrt(s.length2);return [s.dz/len,-s.dx/len];
+ });
+ const sides=path.points.map(([x,z],i)=>{
+   const a=normals[Math.max(0,i-1)],b=normals[Math.min(i,normals.length-1)];
+   const s=path.width/(2*(1+a[0]*b[0]+a[1]*b[1]));
+   return [(a[0]+b[0])*s,(a[1]+b[1])*s];
+ });
+ for(const [i,seg] of path.segments.entries()){
+   const rows=Math.max(1,Math.ceil(Math.sqrt(seg.length2)/.29)),cols=narrow?3:5;
+   const point=(t,u,lift)=>{
+     const x=seg.x+t*seg.dx+(2*u-1)*(sides[i][0]*(1-t)+sides[i+1][0]*t);
+     const z=seg.z+t*seg.dz+(2*u-1)*(sides[i][1]*(1-t)+sides[i+1][1]*t);
+     return [x,height(z)+(narrow?.080:.058)+lift,z];
+   };
+   for(let row=0;row<rows;row++){
+     const t0=row/rows,t1=(row+1)/rows;
+     face(point(t0,0,0),point(t0,1,0),point(t1,1,0),point(t1,0,0),'#ad9b86');
+     for(let k=0;k<cols+row%2;k++){
+       const u=Math.max(0,(k-(row%2)*.5)/cols)+.003,v=Math.min(1,(k+1-(row%2)*.5)/cols)-.003;
+       const end=t1-.026/rows;
+       face(point(t0,u,.009),point(t0,v,.009),point(end,v,.009),point(end,u,.009),pick(stone));
+     }
+   }
+ }
+}
+// From above, cultivated slopes frame the outermost lanes. Fit the field surfaces
+// to the hillside and raise only their downhill edge behind a dry-stone wall.
+for(const side of [-1,1])for(let tier=0;tier<8;tier++)for(let band=0;band<(side>0?4:2);band++){
+ const cx=side*(43+band*15+2.4*Math.sin(tier*.73+band)),cz=3-tier*9.9-band*1.2;
+ const angle=side*(.12+.13*Math.sin(tier*.9+band)),ca=Math.cos(angle),sa=Math.sin(angle);
+ const w=10.7+2.8*Math.sin(tier*1.5+.52*band),d=6.7+1.4*Math.cos(tier*.71+band);
+ function bed(u,v){
+   const lx=w*(u-.5),lz=d*(v-.5),x=cx+lx*ca+lz*sa,z=cz-lx*sa+lz*ca;
+   return [x,terrain(x,z)+.14+.48*v,z];
+ }
+ const patchColor=pick(['#9da673','#a1a06a','#939f68','#afa473','#a0a76d']);
+ const toe=p=>[p[0],terrain(p[0],p[2])-.12,p[2]];
+ for(let k=0;k<5;k++){
+   const a=bed(k/5,0),b=bed((k+1)/5,0),c=bed((k+1)/5,1),e=bed(k/5,1);
+   face(a,b,c,e,patchColor);
+   face(toe(b),b,a,toe(a),'#af9b7f');
+   if(k===0)face(toe(a),a,e,toe(e),'#af9b7f');
+   if(k===4)face(toe(c),c,b,toe(b),'#af9b7f');
+   const len=Math.hypot(c[0]-e[0],c[2]-e[2]);
+   rock((c[0]+e[0])/2,(c[1]+e[1])/2-.39,(c[2]+e[2])/2,len+.01,.85,.28,'#c6b499',0,angle,Math.atan2(c[1]-e[1],len));
+ }
+ if((tier+band)%3===0){
+   for(let j=0;j<6;j++){
+     const [x,y,z]=bed(.15+(j%3)*.33,.22+Math.floor(j/3)*.52),h=1.65+rand()*.50;
+     timber(x,y+h*.37,z,.17,h*.76,.17,'#95785b');
+     for(let k=0;k<6;k++)leaf(x+.47*Math.cos(k),y+h*(.88+.12*Math.sin(k*2)),z+.46*Math.sin(k),1.31,.94,1.12,pick(['#899461','#929d64','#77875b']),0,k);
+   }
+ }else{
+   for(let j=1;j<=3;j++)for(let k=0;k<9;k++){
+     const [x,y,z]=bed(.09+k*.10,j*.24);
+     box(x,y+.30,z,w*.09,.52+rand()*.24,.50,pick(['#8b985b','#a0a65c','#919b61']),0,angle);
+     if(k%4===0)timber(x,y+.40,z,.07,.83,.08,'#9c8761');
+   }
+ }
+ if(band===0&&tier%2===1){const [x,y,z]=bed(.10,.93);cypress(x,y,z,3+rand()*2)}
+}
 const stonework=new T.BufferGeometry();
 stonework.setAttribute('position',new T.Float32BufferAttribute(strips,3));
 stonework.setAttribute('color',new T.Float32BufferAttribute(stripColors,3));
@@ -382,6 +456,7 @@ for(const side of [-1,1])for(let j=0;j<30;j++){
  const za=-8.3-j*.72,zb=za-.72,z=(za+zb)/2;
  const edge=t=>edges(t)[side<0?0:1]+side*.33;
  const a=edge(za),b=edge(zb),x=(a+b)/2;
+ if(quarter.occupied(x,z,.85)||quarter.onPath(x+side*1.02,z,-.75))continue;
  const lawn=smooth((-z-20)/5),bed=.44+.37*smooth((-z-10)/9)-.66*lawn;
  masonry(x,height(z)-.10,z,Math.hypot(a-b,za-zb)+.018,bed+.10,.44,Math.atan2(za-zb,b-a));
  const px=x+side*1.02;
@@ -402,31 +477,21 @@ round(7.68,7.16,-30,.31,.39,.31,'#f0d8ad');
 round(7.68,7.38,-30,.58,.19,.55,'#b64f3d');round(7.68,7.51,-30,.44,.10,.40,'#c15b47');
 box(7.66,7.39,-29.73,.14,.12,.035,'#ffe3bf');
 });
-for(let j=0;j<42;j++){let x=(j%2?-1:1)*(11+rand()*23),z=8-rand()*49;if(Math.abs(x+10)<6.8&&Math.abs(z+8)<6)continue;cypress(x,height(z),z,3.2+rand()*4.5)}
-for(let j=0;j<180;j++){const side=rand()>.5?1:-1,z=8-rand()*41,x=side*(5+rand()*12);if(buildings.some(b=>Math.hypot(x-b.x,z-b.z)<6.7)||road(x,z))continue;bush(x,height(z),z,.65+rand(),j%3!==0)}
-for(let j=0;j<65;j++){const x=(rand()-.5)*83,z=j%2?8.4:24.9;if(Math.abs(x)<3)continue;bush(x,0,z,.8+rand()*.8,true)}
-for(let i=0;i<35;i++){
- const tier=Math.floor(i/10),x=(i%10-4.5)*7.15+(rand()-.5)*2.8,z=-52-tier*8-rand()*4;
- const y=6.3+tier*3.55+.14*Math.abs(x)+Math.sin(x*.13)*2.6;
- rock(x,(y+4)/2,z,8.2,y-4,12,'#b4a186');
- local(x,y,z,(rand()-.5)*.64,()=>{
-   const h=2.6+rand()*2.2,w=3.8+rand()*1.7;
-   rock(0,h/2,0,w,h,3.9,pick(['#efe3c9','#f6e1c6','#dbbdac']));
-   houseRoof(w,3.9,h,'#ae6d50');
-   for(const k of [-1.1,1.0]){
-     windowBay(k,h*.61,2,.7,1);
-     for(const side of [-1,1])timber(k+side*.48,h*.61,2.13,.21,1.03,.10,'#707968');
-   }
-   rock(-w*.27,h+.68,-.4,.42,1.3,.48,'#dfb797');box(-w*.27,h+1.38,-.4,.55,.15,.6,'#a66f59');
-   cypress(w*.63,0,1,3.4+rand()*2.6);
- });
+for(let j=0;j<55;j++){
+ const x=(j%2?-1:1)*(12+rand()*25),z=6-rand()*52;
+ if(!quarter.occupied(x,z,1.2)&&buildings.every(b=>Math.hypot(x-b.x,z-b.z)>8))
+   cypress(x,height(z),z,2.8+rand()*3.8);
+}
+for(let j=0;j<65;j++){
+ const x=(rand()-.5)*83,z=j%2?8.4:24.9;
+ if(Math.abs(x)>3&&!quarter.occupied(x,z,.8))bush(x,0,z,.8+rand()*.8,true);
 }
 for(let j=0;j<60;j++){
  const x=(j-30)*4.1;
- const ridge=21+8*Math.sin(x*.081)+4*Math.cos(x*.21);
- leaf(x,4,-104,24,ridge+rand()*8,22,pick(['#9794ad','#a99cb0','#b29ca4']),0,rand()*4);
+ const ridge=27+10*Math.sin(x*.081)+6*Math.cos(x*.21);
+ leaf(x,14,-110,25,ridge+rand()*9,25,pick(['#9794ad','#a99cb0','#b29ca4']),0,rand()*4);
 }
-for(let z of [1,-15,-31])lamp(edges(z)[0]-.75,height(z),z);
+for(let z of [1,-15,-31]){const x=edges(z)[0]-.75;if(!quarter.onPath(x,z,-.4))lamp(x,height(z),z)}
 // Recessed panes, warm interior fittings and planted edges give close approaches a readable scale.
 local(2,height(-37),-37,.035,()=>{
  for(let i=0;i<13;i++){const x=-8+i*1.31;box(x,1.42,3.65,1.17,2.01,.035,pick(['#596f70','#617778','#78837b']));box(x,2.10,3.68,.86,.05,.04,'#dec598');box(x-.33,1.11,3.689,.06,1.15,.03,'#667169');}
@@ -442,9 +507,6 @@ local(9,0,3,-.73,()=>{for(const x of [.1,2.63]){for(const side of [-1,1])box(x+s
 local(-10,0,-8,.60,()=>{for(const x of [-4.35,-2.45,.1,2.3,4.35]){box(x,1.55,3.34,.052,1.95,.07,'#594c38');box(x,1.89,3.33,1.6,.06,.06,'#574a38');box(x-.32,1.10,3.31,.54,.52,.03,'#a79e7a');box(x+.37,2.27,3.34,.17,.1,.03,'#ffcc79')}
  label('PIZZA · PASTA · RISOTTO',0,3.86,3.643,3.6,.30,null,'#ffe1ae');for(const x of [-4.3,3.6]){rock(x,.2,4.0,2.7,.40,.66,'#c7b295');for(let k=0;k<5;k++)bush(x-1.03+k*.51,.41,4,.56,true)}
 });
-for(let j=0;j<18;j++){const z=-9-j*1.5;for(const side of [-1,1]){let x=side*(6.8+rand()*2.5);if((z>-17&&side<0)||(z< -24&&side>0)||road(x,z,-.7))continue;bush(x,height(z),z,.65+rand()*.48,true)}}
-for(let j=0;j<15;j++){const side=j%2?-1:1;let x=side*(21+rand()*12),z=6-Math.floor(j/2)*6;local(x,height(z),z,side*.45,()=>{const h=3.1+2*rand();box(0,h/2,0,5.8,h,4.4,pick(['#e5d2ae','#f0d8b7','#d8bc9b']));houseRoof(5.8,4.4,h,'#af694b');for(const x of [-1.6,1.4])windowBay(x,h-.99,2.24,.9,1.22);box(-.4,1.0,2.24,1.0,2,.14,'#81654e');box(-1.5,h+1.1,-.4,.5,1.6,.55,'#c39c79')})}
-
 // The bridge and quay are the closest surfaces in the arrival view.
 for(const side of [-1,1]){
  for(let i=0;i<8;i++){
@@ -461,11 +523,11 @@ for(const side of [-1,1]){
    const x=side*(3.52+k*2.1);
    const za=bankZ(x-1.05),zb=bankZ(x+1.05);
    masonry(x,-2.26,(za+zb)/2,Math.hypot(2.1,zb-za),2.26,.57,-Math.atan2(zb-za,2.1));
-   bush(x,.06,bankZ(x)-.25,.92+rand()*.55,k%3!==0);
+   if(!quarter.occupied(x,bankZ(x)-.25,.7))bush(x,.06,bankZ(x)-.25,.92+rand()*.55,k%3!==0);
  }
  for(let k=0;k<15;k++){
    const z=7.7-k*.74,edge=edges(z)[side<0?0:1],px=edge+side*.55;
-   if((side>0&&z<6.4)||(side<0&&z<-.4))continue;
+   if((side>0&&z<6.4)||(side<0&&z<-.4)||quarter.occupied(px,z,.92))continue;
    masonry(px,-.04,z,.76,.30,.35,Math.PI/2);
    bush(px+side*.46,.02,z,1.02,k%4!==0);
  }
@@ -506,7 +568,7 @@ palm(-8.1,0,8.5,6.6);
 for(let i=0;i<19;i++){
  const x=-15+i*.65;
  if(x>-3.4)break;
- bush(x,.06,8.9+rand()*.44,1.2+rand()*.7,true);
+ if(!quarter.occupied(x,9,.8))bush(x,.06,8.9+rand()*.44,1.2+rand()*.7,true);
 }
 
 // Timber joinery, hanging lamps and painted boards sit in front of recessed glazing.
@@ -627,6 +689,7 @@ for(const side of [-1,1])for(let i=0;i<26;i++){
 }
 // Side gardens carry the eye from the two forecourts to a planted hillside.
 for(const [x,z] of [[-15,4],[16,-7],[-12,-20],[15,-24],[21,32],[-18,28]]){
+ if(quarter.occupied(x,z,3.0))continue;
  const y=height(z);
  masonry(x,y-.08,z+2.0,5.7,.52,.36);
  rock(x,y+.14,z,5.5,.38,4,'#b7a884');
@@ -635,7 +698,7 @@ for(const [x,z] of [[-15,4],[16,-7],[-12,-20],[15,-24],[21,32],[-18,28]]){
 }
 for(let k=0;k<12;k++){
  const z=-11-k*1.42,side=k%2?1:-1,x=edges(z)[side>0?1:0]+side*3.9;
- if(z>-18&&side<0)continue;
+ if((z>-18&&side<0)||quarter.occupied(x,z,2.2))continue;
  masonry(x,height(z)-.16,z,3.4,.48,.31);
  for(let i=0;i<9;i++)bush(x-1.42+i*.36,height(z)+.06,z-.48,.77,true);
 }
@@ -646,17 +709,29 @@ for(const side of [-1,1])for(let band=0;band<3;band++){
    const z=-12.4-j*1.7,margin=3.05+band*1.25;
    if(side<0&&j<2)continue;
    const edge=edges(z)[side<0?0:1],x=edge+side*margin;
+   if(quarter.occupied(x,z,1.20))continue;
    const y=height(z),bed=.28+band*.16;
    rock(x,y+bed*.50-.12,z,1.32,bed+.17,1.80,'#b6a384');
    for(const dz of [-.45,.45])bush(x+(rand()-.5)*.46,y+bed-.018,z+dz,.96+rand()*.21,true);
  }
 }
 
+buildResidences(quarter,{local,box,rock,timber,round,houseRoof,masonry,bush,cypress,height,pick,floweringVine,road,bankZ,buildings});
+plantNeighborhood(quarter,{local,box,rock,timber,leaf,masonry,bush,cypress,height,terrain,road,bankZ,buildings,rand,pick});
+buildings.push(...quarter.homes);
 for(const [key,items] of Object.entries(batches)){
  const shape=key.split('@')[0],mesh=new T.InstancedMesh(geos[shape]||geos.box,finishes[shape]||mat,items.length);
  items.forEach(([m,c],i)=>{mesh.setMatrixAt(i,m);mesh.setColorAt(i,new T.Color(c))});
  mesh.castShadow=mesh.receiveShadow=true;scene.add(mesh);
 }
 renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
-return {renderer,scene,camera,buildings,height,bridgeY,road};
+function canWalk(x,z){
+ const main=z<=30&&z>=-33.15&&road(x,z,.24);
+ if(!main&&!quarter.onPath(x,z,.24))return false;
+ return !buildings.some(b=>{
+   const dx=x-b.x,dz=z-b.z,c=Math.cos(b.a),s=Math.sin(b.a);
+   return Math.abs(dx*c-dz*s)<b.w/2+.24&&Math.abs(dx*s+dz*c)<b.d/2+.24;
+ });
+}
+return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk};
 })();

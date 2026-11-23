@@ -1,5 +1,5 @@
 (() => {
-  const {renderer, scene, camera, buildings, height, bridgeY, road} = town;
+  const {renderer, scene, camera, height, bridgeY, road, quarter, canWalk} = town;
   const canvas = renderer.domElement;
   const views = {
     bridge: [-.65,22,.015,.012], sister: [1,8.7,-.90,.15],
@@ -69,13 +69,6 @@
     if (select.value) [x,z,yaw,pitch] = views[select.value];
     select.value = ''; dirty = true; canvas.focus();
   };
-  function free(px,pz) {
-    if (pz > 30 || pz < -33.15 || !road(px,pz,.24)) return false;
-    return !buildings.some(b => {
-      const dx=px-b.x, dz=pz-b.z, c=Math.cos(b.a), s=Math.sin(b.a);
-      return Math.abs(dx*c-dz*s)<b.w/2+.24 && Math.abs(dx*s+dz*c)<b.d/2+.24;
-    });
-  }
   function pan(right,forward) {
     const c = Math.cos(orbit.bearing), s = Math.sin(orbit.bearing);
     orbit.x = clamp(orbit.x + right*c - forward*s,-18,18);
@@ -148,10 +141,11 @@
       camera.lookAt(orbit.x,y,orbit.z);
       place='街区の俯瞰';
     } else {
-      camera.position.set(x,2.02+height(z)+bridgeY(z),z);
+      camera.position.set(x,2.02+height(z)+bridgeY(z)+quarter.stepHeight(x,z),z);
       camera.rotation.set(pitch,yaw,0,'YXZ');
       const door=doors.find(([,dx,dz]) => Math.hypot(x-dx,z-dz)<1.4);
-      place=door?.[0] || (z>9?'石橋':z<-27?'丘の前庭':z<-9?'丘へ続く坂道':'川沿いの路地');
+      const alley=quarter.onPath(x,z) && (z< -33.15 || !road(x,z));
+      place=door?.[0] || (alley?'住宅の路地':z>9?'石橋':z<-27?'丘の前庭':z<-9?'丘へ続く坂道':'川沿いの路地');
     }
     document.querySelector('#place').textContent=place;
     renderer.render(scene,camera); dirty=false;
@@ -174,8 +168,8 @@
       if (f || r) {
         const step=4.7*dt/Math.hypot(f,r);
         const nx=x+(-Math.sin(yaw)*f+Math.cos(yaw)*r)*step, nz=z+(-Math.cos(yaw)*f-Math.sin(yaw)*r)*step;
-        if (free(nx,z)) x=nx;
-        if (free(x,nz)) z=nz;
+        if (canWalk(nx,z)) x=nx;
+        if (canWalk(x,nz)) z=nz;
       }
     }
     if (f || r || turn || dirty) renderCamera();
