@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>石橋から見た街の変更前後 ｜ 川辺の制作街</title>
+<title>石橋から店先までの造形と夕日 ｜ 川辺の制作街</title>
 <style>
   * { box-sizing: border-box }
   body { max-width: 1500px; margin: auto; padding: 20px; background: #f8f4ec; color: #292d28; font: 1rem/1.5 system-ui,sans-serif }
@@ -21,7 +21,7 @@
   [hidden] { display: none }
   @media(max-width:620px){body{padding:12px}.desktop .pair{grid-template-columns:1fr}.pair{gap:8px}}
 </style>
-<header><h1>石橋から見た街の変更前後</h1><a href="walk.html">街を開く →</a></header>
+<header><h1>石橋から店先までの造形と夕日</h1><a href="walk.html">街を開く →</a></header>
 <div class="options" role="group" aria-label="撮影サイズ">
   <label><input type="radio" name="size" value="desktop" checked> PC · 1280 × 800</label>
   <label><input type="radio" name="size" value="mobile"> スマホ · 375 × 812</label>
@@ -29,12 +29,12 @@
 <section class="desktop" data-size="desktop" aria-label="PCの比較">
   <h2>石橋からの歩行視点</h2>
   <div class="pair">
-    <figure><figcaption>変更前</figcaption><a href="before-bridge-1280.jpg"><img src="before-bridge-1280.jpg" alt="PC・変更前の石橋からの歩行視点"></a></figure>
+    <figure><figcaption>変更前 · 408ebaf</figcaption><a href="before-bridge-1280.jpg"><img src="before-bridge-1280.jpg" alt="PC・変更前の石橋からの歩行視点"></a></figure>
     <figure><figcaption>変更後</figcaption><a href="bridge-1280.jpg"><img src="bridge-1280.jpg" alt="PC・変更後の石橋からの歩行視点"></a></figure>
   </div>
   <h2>街区の俯瞰</h2>
   <div class="pair">
-    <figure><figcaption>変更前</figcaption><a href="before-overview-1280.jpg"><img src="before-overview-1280.jpg" alt="PC・変更前の街区の俯瞰"></a></figure>
+    <figure><figcaption>変更前 · 408ebaf</figcaption><a href="before-overview-1280.jpg"><img src="before-overview-1280.jpg" alt="PC・変更前の街区の俯瞰"></a></figure>
     <figure><figcaption>変更後</figcaption><a href="overview-1280.jpg"><img src="overview-1280.jpg" alt="PC・変更後の街区の俯瞰"></a></figure>
   </div>
   <details><summary>川沿いの住宅路地から見る</summary><img src="quay-1280.jpg" alt="玄関の石段と小庭の間を通る路地"></details>
@@ -42,17 +42,21 @@
 <section class="mobile" data-size="mobile" aria-label="スマホ幅の比較" hidden>
   <h2>石橋からの歩行視点</h2>
   <div class="pair">
-    <figure><figcaption>変更前</figcaption><a href="before-bridge-375.jpg"><img src="before-bridge-375.jpg" alt="スマホ幅・変更前の石橋からの歩行視点"></a></figure>
+    <figure><figcaption>変更前 · 408ebaf</figcaption><a href="before-bridge-375.jpg"><img src="before-bridge-375.jpg" alt="スマホ幅・変更前の石橋からの歩行視点"></a></figure>
     <figure><figcaption>変更後</figcaption><a href="bridge-375.jpg"><img src="bridge-375.jpg" alt="スマホ幅・変更後の石橋からの歩行視点"></a></figure>
   </div>
   <h2>街区の俯瞰</h2>
   <div class="pair">
-    <figure><figcaption>変更前</figcaption><a href="before-overview-375.jpg"><img src="before-overview-375.jpg" alt="スマホ幅・変更前の街区の俯瞰"></a></figure>
+    <figure><figcaption>変更前 · 408ebaf</figcaption><a href="before-overview-375.jpg"><img src="before-overview-375.jpg" alt="スマホ幅・変更前の街区の俯瞰"></a></figure>
     <figure><figcaption>変更後</figcaption><a href="overview-375.jpg"><img src="overview-375.jpg" alt="スマホ幅・変更後の街区の俯瞰"></a></figure>
   </div>
   <details><summary>川沿いの住宅路地から見る</summary><img src="quay-375.jpg" alt="玄関の石段と小庭の間を通る路地"></details>
 </section>
 <details><summary>石橋の途中から左岸の段花壇を見る</summary><a href="quay-garden.jpg"><img src="quay-garden.jpg" width="1280" height="800" alt="川に沿った三段の花壇。その奥に住宅の路地とPISOLAの大窓が見える"></a></details>
+<details><summary>店先の瓦・軒下を近くから見る</summary>
+<h2>PISOLA</h2><div class="pair"><figure><figcaption>変更前</figcaption><img loading="lazy" src="before-pisola-1280.jpg" alt="変更前のPISOLAの店先"></figure><figure><figcaption>変更後</figcaption><img loading="lazy" src="pisola-1280.jpg" alt="変更後のPISOLAの屋根と軒下"></figure></div>
+<h2>SISTER</h2><div class="pair"><figure><figcaption>変更前</figcaption><img loading="lazy" src="before-sister-1280.jpg" alt="変更前のSISTERの店先"></figure><figure><figcaption>変更後</figcaption><img loading="lazy" src="sister-1280.jpg" alt="変更後のSISTERの屋根と軒下"></figure></div>
+</details>
 <script>
   document.querySelector('.options').addEventListener('change', event => {
     for (const section of document.querySelectorAll('[data-size]')) section.hidden = section.dataset.size !== event.target.value;
