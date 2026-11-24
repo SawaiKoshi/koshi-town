@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>街区の変更前後 ｜ 川辺の制作街</title>
+<title>石橋から見た街の変更前後 ｜ 川辺の制作街</title>
 <style>
   * { box-sizing: border-box }
   body { max-width: 1500px; margin: auto; padding: 20px; background: #f8f4ec; color: #292d28; font: 1rem/1.5 system-ui,sans-serif }
@@ -17,40 +17,42 @@
   .mobile { max-width: 770px }
   details { margin-top: 1.2rem } summary { cursor: pointer; margin-bottom: .6rem }
   details img { max-width: 780px }
+  details a { display: block }
   [hidden] { display: none }
   @media(max-width:620px){body{padding:12px}.desktop .pair{grid-template-columns:1fr}.pair{gap:8px}}
 </style>
-<header><h1>街区の変更前後</h1><a href="walk.html">街を開く →</a></header>
+<header><h1>石橋から見た街の変更前後</h1><a href="walk.html">街を開く →</a></header>
 <div class="options" role="group" aria-label="撮影サイズ">
   <label><input type="radio" name="size" value="desktop" checked> PC · 1280 × 800</label>
   <label><input type="radio" name="size" value="mobile"> スマホ · 375 × 812</label>
 </div>
 <section class="desktop" data-size="desktop" aria-label="PCの比較">
-  <h2>街区の俯瞰</h2>
-  <div class="pair">
-    <figure><figcaption>変更前</figcaption><a href="before-overview-1280.jpg"><img src="before-overview-1280.jpg" alt="PC・変更前の街区の俯瞰"></a></figure>
-    <figure><figcaption>変更後</figcaption><a href="overview-1280.jpg"><img src="overview-1280.jpg" alt="PC・変更後の街区の俯瞰"></a></figure>
-  </div>
   <h2>石橋からの歩行視点</h2>
   <div class="pair">
     <figure><figcaption>変更前</figcaption><a href="before-bridge-1280.jpg"><img src="before-bridge-1280.jpg" alt="PC・変更前の石橋からの歩行視点"></a></figure>
     <figure><figcaption>変更後</figcaption><a href="bridge-1280.jpg"><img src="bridge-1280.jpg" alt="PC・変更後の石橋からの歩行視点"></a></figure>
   </div>
+  <h2>街区の俯瞰</h2>
+  <div class="pair">
+    <figure><figcaption>変更前</figcaption><a href="before-overview-1280.jpg"><img src="before-overview-1280.jpg" alt="PC・変更前の街区の俯瞰"></a></figure>
+    <figure><figcaption>変更後</figcaption><a href="overview-1280.jpg"><img src="overview-1280.jpg" alt="PC・変更後の街区の俯瞰"></a></figure>
+  </div>
   <details><summary>川沿いの住宅路地から見る</summary><img src="quay-1280.jpg" alt="玄関の石段と小庭の間を通る路地"></details>
 </section>
 <section class="mobile" data-size="mobile" aria-label="スマホ幅の比較" hidden>
-  <h2>街区の俯瞰</h2>
-  <div class="pair">
-    <figure><figcaption>変更前</figcaption><a href="before-overview-375.jpg"><img src="before-overview-375.jpg" alt="スマホ幅・変更前の街区の俯瞰"></a></figure>
-    <figure><figcaption>変更後</figcaption><a href="overview-375.jpg"><img src="overview-375.jpg" alt="スマホ幅・変更後の街区の俯瞰"></a></figure>
-  </div>
   <h2>石橋からの歩行視点</h2>
   <div class="pair">
     <figure><figcaption>変更前</figcaption><a href="before-bridge-375.jpg"><img src="before-bridge-375.jpg" alt="スマホ幅・変更前の石橋からの歩行視点"></a></figure>
     <figure><figcaption>変更後</figcaption><a href="bridge-375.jpg"><img src="bridge-375.jpg" alt="スマホ幅・変更後の石橋からの歩行視点"></a></figure>
   </div>
+  <h2>街区の俯瞰</h2>
+  <div class="pair">
+    <figure><figcaption>変更前</figcaption><a href="before-overview-375.jpg"><img src="before-overview-375.jpg" alt="スマホ幅・変更前の街区の俯瞰"></a></figure>
+    <figure><figcaption>変更後</figcaption><a href="overview-375.jpg"><img src="overview-375.jpg" alt="スマホ幅・変更後の街区の俯瞰"></a></figure>
+  </div>
   <details><summary>川沿いの住宅路地から見る</summary><img src="quay-375.jpg" alt="玄関の石段と小庭の間を通る路地"></details>
 </section>
+<details><summary>石橋の途中から左岸の段花壇を見る</summary><a href="quay-garden.jpg"><img src="quay-garden.jpg" width="1280" height="800" alt="川に沿った三段の花壇。その奥に住宅の路地とPISOLAの大窓が見える"></a></details>
 <script>
   document.querySelector('.options').addEventListener('change', event => {
     for (const section of document.querySelectorAll('[data-size]')) section.hidden = section.dataset.size !== event.target.value;
