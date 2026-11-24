@@ -2,11 +2,11 @@
   const {renderer, scene, camera, height, bridgeY, road, quarter, canWalk} = town;
   const canvas = renderer.domElement;
   const views = {
-    bridge: [-.65,22,.015,.012], sister: [1,8.7,-.90,.15],
+    bridge: [-.65,22,.015,.012], sister: [-.1,8.3,-.79,.15],
     pisola: [-4.3,-2.5,.95,.14], hill: [-.95,-20.9,-.28,.10]
   };
   const doors = [
-    ['SISTERの入口',4.25,4.45], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
+    ['SISTERの入口',...town.salonDoor], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
   ];
   const select = document.querySelector('#views');
   const keys = new Set(), pointers = new Map(), padKeys = new Map();

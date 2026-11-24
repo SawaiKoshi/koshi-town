@@ -19,7 +19,7 @@ function planNeighborhood(height) {
   function street(id,width,points) { streets[id]=path(points,width,lanes) }
   street('quay',1.85,[[-1.4,6.9],[-5.5,5.6],[-11.2,4.2],[-16.4,3.8],[-19.3,1.1],[-20,-5.6],[-18.9,-12.8],[-15.4,-16.2],[-10.6,-16.9],[-5.2,-18.5],[-2.4,-18.6]]);
   street('westCourt',1.47,[[-19.3,1.1],[-23.4,.3],[-25.7,-3.5],[-26.2,-9.5],[-24.2,-13.5],[-18.9,-12.8]]);
-  street('salon',1.75,[[1.6,-1.7],[5.4,-2.9],[10.1,-4.2],[14.9,-3.4],[17.4,.15],[18.7,3.8],[22.9,4.6],[27,3.5]]);
+  street('salon',1.75,[[1.6,-1.7],[4.1,-4.85],[8.2,-4.83],[10.1,-4.2],[14.9,-3.4],[17.4,.15],[18.7,3.8],[22.9,4.6],[27,3.5]]);
   street('eastRise',1.72,[[10.1,-4.2],[11.8,-8.4],[11.1,-13.2],[12.2,-17.5],[11,-20.8],[7.4,-22.0],[2.35,-23.1]]);
   street('westRise',1.68,[[-15.4,-16.2],[-15.9,-20.3],[-14,-24.7],[-13.2,-28.7],[-10.5,-31.7],[-7.1,-32.4],[-2.5,-32.1]]);
   street('eastCourt',1.60,[[17.4,.15],[21.5,-2.3],[23.1,-7.4],[22.7,-12.2],[19.1,-15.7],[15.5,-15.9],[11.6,-15.6]]);
@@ -28,8 +28,6 @@ function planNeighborhood(height) {
   street('ridge',2.08,[[-29,-48.0],[-22,-45.8],[-13,-44.7],[-7.4,-48.3],[-1,-48.7],[7.8,-46.8],[15.7,-45.5],[22.5,-47.8],[28.8,-50.2]]);
   street('highSteps',1.58,[[-22,-45.8],[-24.1,-52.2],[-21.7,-56.3],[-15.7,-59.6],[-8.2,-57.7],[-2.7,-57.6],[2.6,-60.0],[10.2,-59.3],[16.5,-55.6],[19.4,-51.8],[22.5,-47.8]]);
   street('crest',1.68,[[-21.7,-56.3],[-24.7,-60.6],[-22.8,-65.3],[-17.5,-67.7],[-11.6,-69.3],[-6.1,-68.2],[-1.4,-71],[5.2,-71.5],[11.3,-70.3],[17.6,-67],[20.6,-63.5],[18.2,-59.8],[16.5,-55.6]]);
-  // The two houses near the saddle face the rising main road itself.
-  const mainBend=path([[-1,-10],[-2.65,-15],[-1,-19],[-.2,-21],[1.6,-23]],2.8,[]);
 
   function nearest(line,x,z) {
     let best=Infinity,point;
@@ -43,8 +41,8 @@ function planNeighborhood(height) {
   // x, z, frontage, depth, wall height, roof, turn from the lane normal.
   const blocks={
     quay:[
-      [-10.5,7.65,4.0,2.65,2.65,'terrace',-.08],[-17.0,7.15,4.9,2.8,3.4,'gable',.06],
-      [-13.0,.20,4.35,2.9,3.45,'hip',.14],[-16.9,-4.3,3.4,2.35,4.4,'lean',-.03],
+      [-14.5,7.35,3.55,2.45,2.42,'hip',.31],[-19.1,7.15,4.25,2.65,3.15,'gable',-.09],
+      [-15.7,.10,3.80,2.55,2.78,'lean',-.22],[-16.9,-4.3,3.4,2.35,4.4,'lean',-.03],
       [-22.6,-7.4,4.15,2.55,4.85,'loggia',-.10]
     ],
     westCourt:[
@@ -52,7 +50,7 @@ function planNeighborhood(height) {
       [-29.9,-9.0,3.7,3.05,5.1,'terrace',.07],[-27.5,-16.9,4.2,2.9,3.5,'lean',-.12]
     ],
     salon:[
-      [5.65,-6.15,3.7,2.7,3.05,'terrace',-.12],[17.3,6.65,3.25,2.2,3.15,'gable',.09],
+      [13.45,-.25,3.45,2.45,2.85,'terrace',-.19],[17.3,6.65,3.25,2.2,3.15,'gable',.09],
       [25.0,7.50,4.3,2.6,3.7,'hip',-.13],[28.9,.15,4.0,3.3,4.45,'loggia',.12]
     ],
     eastCourt:[
@@ -60,22 +58,22 @@ function planNeighborhood(height) {
       [26.6,-13.7,4.1,3.0,4.95,'terrace',.13],[20.8,-19.7,4.8,3.2,3.25,'hip',-.17]
     ],
     eastRise:[
-      [15.4,-8.8,4.35,2.8,3.75,'hip',.06],[7.5,-12.0,4.2,3.0,4.85,'loggia',-.14],
-      [15.6,-19.1,3.45,2.55,3.05,'lean',.16],[7.9,-18.0,3.85,2.75,3.85,'gable',.06]
+      [15.4,-8.8,4.35,2.8,3.75,'hip',.06],[8.5,-12.0,3.6,2.35,3.05,'hip',-.09],
+      [15.6,-19.1,3.45,2.55,3.05,'lean',.16],[8.3,-17.8,3.45,2.45,3.35,'gable',.16],
+      [7.35,-7.65,3.15,2.2,2.65,'lean',.18]
     ],
-    bend:[[-4.6,-22.85,3.35,2.4,3.25,'terrace',-.1],[2.25,-14.4,3.65,2.6,3.9,'lean',.10]],
     westRise:[
       [-10.25,-21.8,4.1,3.0,4.5,'loggia',.09],[-19.8,-20.6,4.2,3.1,3.2,'hip',-.09],
       [-18.0,-26.1,3.85,3.05,5.15,'gable',.08],[-9.8,-26.05,3.80,2.65,3.5,'terrace',-.10]
     ],
-    upperWest:[[-19.3,-34.2,5.40,3.9,4.1,'hip',.09],[-10.4,-41.4,3.55,2.7,3.3,'lean',-.03]],
+    upperWest:[[-18.15,-40.15,3.20,2.35,3.25,'terrace',-.19],[-19.3,-34.2,5.40,3.9,4.1,'hip',.09],[-10.4,-41.4,3.55,2.7,3.3,'lean',-.03]],
     upperEast:[[13.15,-27.35,4.2,2.65,3.15,'gable',-.12],[20.85,-27.8,5.1,3.2,4.1,'loggia',.08],[18.25,-34.6,3.6,2.8,5.2,'terrace',-.10]],
     ridge:[[-26.5,-43.7,4.2,2.9,3.4,'hip',.07],[-17.4,-48.6,5.7,3.7,4.65,'gable',-.13],[-3.1,-44.8,4.0,2.85,3.8,'terrace',.12],[3.1,-51.3,5.4,3.3,4.4,'loggia',-.09],[17.3,-42.1,4.25,3.0,4.1,'hip',.10],[26.1,-45,4.5,3.1,4.8,'gable',-.14],[29.6,-54,4.0,3.0,3.75,'lean',.08]],
     highSteps:[[-27.8,-54.6,4.55,3.3,4.0,'gable',.17],[-20.4,-60.8,3.9,3.15,5.5,'terrace',-.10],[-15.2,-55.4,4.75,3.2,3.8,'hip',.06],[-9.3,-62,4.2,3.3,5.1,'loggia',-.11],[-4.6,-54,4.0,3.1,3.1,'lean',.12],[1.0,-64.2,5.15,3.5,4.85,'hip',-.07],[8.0,-55.4,4.3,3.0,4.05,'terrace',.12],[13.8,-62.0,5.7,3.7,4.25,'gable',-.15],[22.7,-57.4,3.7,3.0,5.15,'loggia',.13]],
     crest:[[-27.5,-64.2,4.6,3.4,4.15,'hip',-.06],[-20.4,-70.8,3.55,3.4,5.6,'terrace',.14],[-14.2,-65.2,4.1,2.8,3.4,'lean',.05],[-11.7,-73.4,5.8,3.1,4.25,'gable',-.08],[-3.4,-74.2,4.3,3.1,5.45,'loggia',-.06],[6.3,-66.8,3.5,2.6,4.4,'terrace',.13],[7.4,-75.4,5.35,3.6,4.3,'hip',.03],[15.3,-72.7,4.9,3.35,4.85,'gable',-.09],[23.8,-66.5,3.8,3.3,5.65,'loggia',.06]]
   };
   for (const [id,plots] of Object.entries(blocks)) for (const [x,z,w,d,h,roof,turn] of plots) {
-    const lane=id==='bend'?mainBend:streets[id], anchor=nearest(lane,x,z);
+    const lane=streets[id], anchor=nearest(lane,x,z);
     const a=Math.atan2(anchor[0]-x,anchor[1]-z)+turn, s=Math.sin(a),c=Math.cos(a);
     const doorZ=d/2+.34, doorX=(homes.length%3-1)*w*.15;
     const door=[x+c*doorX+s*doorZ,z-s*doorX+c*doorZ];
@@ -276,9 +274,9 @@ function buildResidences(plan, {local,box,rock,timber,round,houseRoof,masonry,bu
 
 // Gardens occupy the leftover pockets between buildings and the outside of a bend.
 // Test their whole footprint, including a walking clearance around every gate.
-function plantNeighborhood(plan, {local,box,rock,timber,leaf,masonry,bush,cypress,height,terrain,road,bankZ,buildings,rand,pick}) {
+function plantNeighborhood(plan, {local,box,rock,timber,leaf,masonry,bush,cypress,height,terrain,road,bankZ,inQuayGarden,buildings,rand,pick}) {
   function clear(x,z,margin){
-    if(z>bankZ(x)-.35||plan.occupied(x,z,margin)||(z>=-34.8&&road(x,z,-margin)))return false;
+    if(inQuayGarden(x,z)||z>bankZ(x)-.35||plan.occupied(x,z,margin)||(z>=-34.8&&road(x,z,-margin)))return false;
     return buildings.every(b=>{
       const dx=x-b.x,dz=z-b.z,c=Math.cos(b.a),s=Math.sin(b.a);
       return Math.abs(dx*c-dz*s)>b.w/2+margin || Math.abs(dx*s+dz*c)>b.d/2+margin;
@@ -323,7 +321,7 @@ function plantNeighborhood(plan, {local,box,rock,timber,leaf,masonry,bush,cypres
     });
     return true;
   }
-  const pockets=[[-5.9,2.4],[-6.2,7.8],[-18,-.6],[-22,6],[-23.5,-3],[-25,-19],[-11,-13],[-16,-11.8],
+  const pockets=[[-18,-.6],[-22,6],[-23.5,-3],[-25,-19],[-11,-13],[-16,-11.8],
     [3.7,-9.1],[5,-18.9],[-6.7,-24.7],[-7.8,-28.8],[-20,-29.5],[8.7,-8.6],[12,-11.2],[17.75,-12.9],
     [15.8,-23.2],[20.1,-23.5],[20.5,7],[24.6,.3],[6.3,-31.4],[-26,-24],[-21.7,-36.4]];
   for(const [i,[x,z]] of pockets.entries()){

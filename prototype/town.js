@@ -133,7 +133,7 @@ function glazing(top,inside,lit){
 const stone=['#d8c2a6','#efdab8','#d4bba2','#c3a99a','#d0b5a1'];
 const green=['#778b46','#98a84c','#586e45','#859852'];
 function smooth(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)}
-const height=z=>1.76*smooth((-z-8)/9)+3.9*smooth((-z-16)/14)
+const height=z=>2.35*smooth((-z-8)/10)+5.75*smooth((-z-16)/15)
  +3.1*smooth((-z-44)/10)+3.6*smooth((-z-54)/10)+5.2*smooth((-z-65)/16);
 const quarter=planNeighborhood(height);
 // Folded, faceted leaves and small stepped whorls of flowers share two meshes.
@@ -236,7 +236,12 @@ function houseRoof(w,d,h,col,detailed=false){
 function chair(x,z){round(x,.57,z,.66,.11,.66,'#f1e9d9');for(const i of [-1,1])for(const j of [-1,1])box(x+i*.22,.28,z+j*.21,.065,.55,.065,'#eee1ce');for(const i of [-1,1])box(x+i*.23,.86,z-.26,.055,.66,.065,'#eee1ce');box(x,1.14,z-.25,.51,.09,.09,'#eee1ce')}
 const buildings=[];
 function site(x,z,a,w,d,fn){buildings.push({x,z,a,w,d});local(x,height(z),z,a,fn)}
-site(9,3,-.73,8,6,()=>{
+// One corner plot anchors the facade, its furniture and the walking destination.
+const salon={x:7.35,z:1.35,angle:-.85};
+function salonFront(build) { local(salon.x,0,salon.z,salon.angle,build) }
+const salonDoor=[salon.x-2.63*Math.cos(salon.angle)+4.08*Math.sin(salon.angle),
+ salon.z+2.63*Math.sin(salon.angle)+4.08*Math.cos(salon.angle)];
+site(salon.x,salon.z,salon.angle,8,6,()=>{
 box(0,3.35,0,8,6.7,6,'#a35037');
 function brickFace(width){
  for(let r=0;r<46;r++)for(let k=-1;k<Math.ceil(width/.36);k++){
@@ -326,8 +331,8 @@ for(const z of [9,14,19,24.8])for(const x of [-2.34,2.34]){box(x,bridgeY(z)+.45,
 // Each cross-section joins both shop forecourts to the uphill lane.
 // Interpolating the two edges also gives the paving and walking limits the same bends.
 const sections=[
- [-35,-5.7,9.5],[-31,-3.8,4.4],[-25,.25,4.5],[-21,-1.2,2.6],[-19,-2.75,1.6],
- [-15,-4.3,-.8],[-10,-3.65,1.0],[-6,-9.8,3.3],[-3.2,-9.3,4.45],
+ [-35,-5.7,9.5],[-31,-3.8,4.8],[-25,.15,5.15],[-21,-1.6,3.35],[-19,-3.55,1.75],
+ [-15,-5.25,-.55],[-10,-3.95,1.45],[-6,-9.8,3.3],[-3.2,-9.3,4.45],
  [.5,-1.85,2.8],[3.7,-3.4,7.8],[6,-3.65,6.9],[9,-2.14,2.14]
 ];
 function edges(z){
@@ -484,7 +489,7 @@ for(let j=0;j<55;j++){
 }
 for(let j=0;j<65;j++){
  const x=(rand()-.5)*83,z=j%2?8.4:24.9;
- if(Math.abs(x)>3&&!quarter.occupied(x,z,.8))bush(x,0,z,.8+rand()*.8,true);
+ if(Math.abs(x)>3&&!inQuayGarden(x,z)&&!quarter.occupied(x,z,.8))bush(x,0,z,.8+rand()*.8,true);
 }
 for(let j=0;j<60;j++){
  const x=(j-30)*4.1;
@@ -499,7 +504,7 @@ local(2,height(-37),-37,.035,()=>{
  for(const x of [-.48,.48]){box(x,1.24,3.76,.91,2.25,.08,'#687c7c');box(x,1.20,3.82,.06,.36,.04,'#ded4b8')}
  label('GAME GALLERY',0,2.63,4.70,3.10,.36,'#465251','#ffedc8');
 });
-local(9,0,3,-.73,()=>{for(const x of [.1,2.63]){for(const side of [-1,1])box(x+side*.86,1.45,3.27,.055,2.1,.08,'#4d453b');box(x,1.75,3.28,1.94,.07,.09,'#544537');box(x-.56,1.32,3.29,.42,.72,.02,'#8a9184');box(x+.4,2.19,3.28,.18,.11,.05,'#ffd888')}
+salonFront(()=>{for(const x of [.1,2.63]){for(const side of [-1,1])box(x+side*.86,1.45,3.27,.055,2.1,.08,'#4d453b');box(x,1.75,3.28,1.94,.07,.09,'#544537');box(x-.56,1.32,3.29,.42,.72,.02,'#8a9184');box(x+.4,2.19,3.28,.18,.11,.05,'#ffd888')}
  for(const z of [-1.65,1.2])local(-4,0,z,-Math.PI/2,()=>windowBay(0,4.55,0,1.45,1.32));for(let i=0;i<15;i++)box(-4.02,i*.4+.14,0,.04,.023,6,'#935344');
  for(const x of [-3.68,-1.67]){round(x,.26,4.14,.45,.52,.45,'#b77452');bush(x,.52,4.14,.68,true)}
  box(-2.62,1.23,3.29,.84,1.65,.035,'#ae8156');box(-2.62,1.57,3.32,.53,.79,.03,'#81948d');box(-2.12,1.03,3.33,.07,.16,.08,'#dfc791');
@@ -523,7 +528,7 @@ for(const side of [-1,1]){
    const x=side*(3.52+k*2.1);
    const za=bankZ(x-1.05),zb=bankZ(x+1.05);
    masonry(x,-2.26,(za+zb)/2,Math.hypot(2.1,zb-za),2.26,.57,-Math.atan2(zb-za,2.1));
-   if(!quarter.occupied(x,bankZ(x)-.25,.7))bush(x,.06,bankZ(x)-.25,.92+rand()*.55,k%3!==0);
+   if(!inQuayGarden(x,bankZ(x)-.25)&&!quarter.occupied(x,bankZ(x)-.25,.7))bush(x,.06,bankZ(x)-.25,.92+rand()*.55,k%3!==0);
  }
  for(let k=0;k<15;k++){
    const z=7.7-k*.74,edge=edges(z)[side<0?0:1],px=edge+side*.55;
@@ -546,7 +551,7 @@ local(-10,0,-8,.60,()=>{
    box(x,2.05,3.555,.13,.38,.035,k%2?'#dfb25d':'#548f8c');
  }
 });
-local(9,0,3,-.73,()=>{
+salonFront(()=>{
  const glass=glazing('#849b99','#686c59',true);
  for(const x of [.1,2.63]){
    for(const side of [-1,1])panel(glass,x+side*.46,1.43,3.35,.81,2.14);
@@ -563,13 +568,38 @@ local(2,height(-37),-37,.035,()=>{
  }
  for(let i=0;i<14;i++)panel(clerestory,-5.66+i,4.57,3.644,.88,.74);
 });
-// Layers of vines on the bank frame the storefronts from the bridge.
-palm(-8.1,0,8.5,6.6);
-for(let i=0;i<19;i++){
- const x=-15+i*.65;
- if(x>-3.4)break;
- if(!quarter.occupied(x,9,.8))bush(x,.06,8.9+rand()*.44,1.2+rand()*.7,true);
+// The high edge follows the quay footpath. Each lower bed reaches farther
+// towards the river, so all three flowering edges are visible from the bridge.
+function quayBedEdge(x,t) {
+ const pathEdge=6.98+(x+4.15)*.24;
+ return pathEdge*(1-t)+(bankZ(x)-.13)*t;
 }
+function inQuayGarden(x,z) {
+ return x>=-11.85 && x<=-4.15 && z>=quayBedEdge(x,0)-.18 && z<=bankZ(x)+.15;
+}
+for(const [tier,top] of [.89,.58,.29].entries()){
+ const t0=tier/3,t1=(tier+1)/3;
+ const ends=[-11.85,-9.95,-8,-6.05,-4.15];
+ for(let i=1;i<ends.length;i++){
+   const left=ends[i-1],right=ends[i],x=(left+right)/2;
+   const back=quayBedEdge(x,t0),front=quayBedEdge(x,t1);
+   const dz=quayBedEdge(right,t1)-quayBedEdge(left,t1),angle=-Math.atan2(dz,right-left);
+   const width=Math.hypot(right-left,dz),depth=(front-back)*Math.cos(angle);
+   local(x,0,(front+back)/2,angle,()=>{
+     rock(0,top/2-.04,0,width+.05,top+.08,depth,'#b4a383');
+     box(0,top-.022,0,width+.04,.06,depth,'#87915a');
+     masonry(0,-.08,depth/2,width,top+.08,.18);
+     for(const side of [-1,1])if(side<0?i===1:i===ends.length-1)
+       masonry(side*width/2,-.08,0,depth,top+.08,.18,Math.PI/2);
+     for(let k=0;k<5;k++){
+       const lx=width*((k+.5)/5-.5),lz=(k%2-.5)*depth*.51;
+       bush(lx,top,lz,.84+.22*Math.cos(i+k),k%4!==tier);
+     }
+     if((tier+i)%3===0)floweringVine(width*.18,top+.10,depth/2+.13,.46,.49);
+   });
+ }
+}
+palm(-12.5,0,6.05,4.8);
 
 // Timber joinery, hanging lamps and painted boards sit in front of recessed glazing.
 local(-10,0,-8,.60,()=>{
@@ -613,7 +643,7 @@ function floweringVine(x,y,z,length,span){
    }
  }
 }
-local(9,0,3,-.73,()=>{
+salonFront(()=>{
  // Coping and roof seams are also visible from the high camera.
  for(const side of [-1,1]){
    rock(side*3.93,6.83,0,.18,.25,6.11,'#aa6853');rock(0,6.83,side*2.94,7.80,.25,.17,'#af725e');
@@ -646,7 +676,7 @@ local(9,0,3,-.73,()=>{
 });
 // Gravel courtyards ground each shop. The public lane runs level with the steps.
 local(-10,0,-8,.60,()=>rock(0,.006,.75,13.5,.11,7.65,'#d4c0a3'));
-local(9,0,3,-.73,()=>rock(0,.004,.68,8.86,.14,7.76,'#ceba9f'));
+salonFront(()=>rock(0,.004,.68,8.86,.14,7.76,'#ceba9f'));
 local(2,height(-37),-37,.035,()=>{
  rock(0,.005,2.35,20.2,.12,6.7,'#d9d2bd');
  for(let i=0;i<6;i++)box(-7.8+i*3.1,5.16,0,.08,.12,6.68,'#c9c5bf');
@@ -717,7 +747,7 @@ for(const side of [-1,1])for(let band=0;band<3;band++){
 }
 
 buildResidences(quarter,{local,box,rock,timber,round,houseRoof,masonry,bush,cypress,height,pick,floweringVine,road,bankZ,buildings});
-plantNeighborhood(quarter,{local,box,rock,timber,leaf,masonry,bush,cypress,height,terrain,road,bankZ,buildings,rand,pick});
+plantNeighborhood(quarter,{local,box,rock,timber,leaf,masonry,bush,cypress,height,terrain,road,bankZ,inQuayGarden,buildings,rand,pick});
 buildings.push(...quarter.homes);
 for(const [key,items] of Object.entries(batches)){
  const shape=key.split('@')[0],mesh=new T.InstancedMesh(geos[shape]||geos.box,finishes[shape]||mat,items.length);
@@ -733,5 +763,5 @@ function canWalk(x,z){
    return Math.abs(dx*c-dz*s)<b.w/2+.24&&Math.abs(dx*s+dz*c)<b.d/2+.24;
  });
 }
-return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk};
+return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salonDoor};
 })();
