@@ -8,15 +8,28 @@
   const doors = [
     ['SISTERの入口',...town.salonDoor], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
   ];
+  // Fixed vantage points beside the bridge: river and arches in front, PISOLA left,
+  // SISTER right, the lane and gallery behind. Portrait screens get their own framing.
+  const vistas = {
+    a: {name:'案A 橋の脇', wide:{eye:[9.0,4.0,27.8],target:[-2.8,.9,-6],fov:54},
+      narrow:{eye:[9.2,4.0,28.2],target:[-2.6,.2,-6],fov:68}},
+    b: {name:'案B 東岸の高台', wide:{eye:[6.8,6.8,31.5],target:[-1.8,1,-7],fov:47},
+      narrow:{eye:[6.8,8.6,37],target:[-2.2,1.2,-8],fov:66}}
+  };
   const select = document.querySelector('#views');
+  const picker = document.querySelector('#vistas');
   const keys = new Set(), pointers = new Map(), padKeys = new Map();
   const aliases = {arrowup:'w', arrowdown:'s', arrowleft:'a', arrowright:'d'};
   const clamp = THREE.MathUtils.clamp;
   const start = location.hash.slice(1);
   let [x,z,yaw,pitch] = Object.hasOwn(views,start) ? views[start] : views.bridge;
+  // The vantage keeps its own small look-around offset; walking state is never touched.
+  let vista = 'a', glance = {yaw:0, pitch:0};
   // This rig has its own focus, lens and orbit. Walking coordinates stay in metres.
   const orbit = {x:0, z:-4, bearing:-.45, elevation:.47, distance:62};
-  let overview = false, dirty = true, last = performance.now();
+  let current = 'walk', dirty = true, last = performance.now();
+  const isOverview = () => current === 'overview';
+  const pose = () => vistas[vista][camera.aspect < .8 ? 'narrow' : 'wide'];
 
   function clearInput() {
     for (const [id,btn] of padKeys) if (btn.hasPointerCapture(id)) btn.releasePointerCapture(id);
@@ -26,34 +39,45 @@
   function size() {
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight;
-    camera.fov = overview ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
+    camera.fov = current === 'vista' ? pose().fov
+      : isOverview() ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
     camera.updateProjectionMatrix();
     dirty = true;
   }
+  const help = {
+    walk: ['WASD・矢印で歩く　ドラッグで見回す', '方向ボタンで歩く　ドラッグで見回す'],
+    overview: ['ドラッグで回転　ホイールでズーム　右ドラッグ・矢印で移動', '1本指で回転　2本指で移動・ピンチでズーム'],
+    vista: ['ドラッグ・Q/Eで少し見回す　案A・案Bで構図を切り替え', '1本指で少し見回す　案A・案Bで構図を切り替え']
+  };
   function mode(next) {
-    if (next === overview) return;
+    if (next === current) return;
     clearInput();
-    overview = next;
-    document.body.classList.toggle('overview', next);
+    current = next;
+    glance = {yaw:0, pitch:0};
+    document.body.classList.toggle('overview', next === 'overview');
+    document.body.classList.toggle('vista', next === 'vista');
     for (const b of document.querySelectorAll('[data-mode]')) {
-      b.setAttribute('aria-pressed', String((b.dataset.mode === 'overview') === next));
+      b.setAttribute('aria-pressed', String(b.dataset.mode === next));
     }
-    select.parentElement.hidden = next;
-    document.querySelector('#pad').hidden = next;
-    document.querySelector('#desktop-help').textContent = next
-      ? 'ドラッグで回転　ホイールでズーム　右ドラッグ・矢印で移動'
-      : 'WASD・矢印で歩く　ドラッグで見回す';
-    document.querySelector('#touch-help').textContent = next
-      ? '1本指で回転　2本指で移動・ピンチでズーム'
-      : '方向ボタンで歩く　ドラッグで見回す';
+    select.hidden = next !== 'walk';
+    picker.hidden = next !== 'vista';
+    document.querySelector('#pad').hidden = next !== 'walk';
+    document.querySelector('#desktop-help').textContent = help[next][0];
+    document.querySelector('#touch-help').textContent = help[next][1];
     size();
     canvas.focus({preventScroll:true});
   }
-  for (const b of document.querySelectorAll('[data-mode]')) {
-    const activate = () => mode(b.dataset.mode === 'overview');
+  function compose(name) {
+    vista = name; glance = {yaw:0, pitch:0};
+    for (const b of picker.querySelectorAll('[data-vista]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.vista === name));
+    }
+    size();
+  }
+  function onTap(b, activate) {
     b.onclick = activate;
     // After a canvas drag some touch browsers suppress the next compatibility click.
-    // Accept a completed tap as well; mode() is idempotent when both events fire.
+    // Accept a completed tap as well; both handlers are idempotent when both events fire.
     let tap;
     b.onpointerdown = e => {
       if (e.pointerType === 'touch') tap = {id:e.pointerId,x:e.clientX,y:e.clientY};
@@ -63,6 +87,10 @@
       if (tap?.id === e.pointerId && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<10) activate();
       tap = null;
     };
+  }
+  for (const b of document.querySelectorAll('[data-mode]')) onTap(b, () => mode(b.dataset.mode));
+  for (const b of picker.querySelectorAll('[data-vista]')) {
+    onTap(b, () => { compose(b.dataset.vista); canvas.focus({preventScroll:true}) });
   }
   select.onchange = () => {
     clearInput();
@@ -92,7 +120,7 @@
   }
   canvas.oncontextmenu = e => e.preventDefault();
   canvas.onwheel = e => {
-    if (!overview) return;
+    if (!isOverview()) return;
     e.preventDefault();
     const pixels = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
     zoom(Math.exp(clamp(pixels,-240,240)*.0016));
@@ -109,7 +137,7 @@
   canvas.onpointermove = e => {
     const p = pointers.get(e.pointerId);
     if (!p) return;
-    const two = pointers.size === 2 && overview;
+    const two = pointers.size === 2 && isOverview();
     const old = two && pair(), dx=e.clientX-p.x, dy=e.clientY-p.y;
     p.x=e.clientX; p.y=e.clientY;
     if (pointers.size > 2) return;
@@ -118,9 +146,11 @@
       const now = pair();
       pan((old.x-now.x)*units,(now.y-old.y)*units);
       zoom(old.span/now.span);
-    } else if (overview && (e.buttons === 2 || e.shiftKey)) {
+    } else if (current === 'vista') {
+      if (pointers.size === 1) look(-dx*.003,-dy*.003);
+    } else if (isOverview() && (e.buttons === 2 || e.shiftKey)) {
       pan(-dx*units,dy*units);
-    } else if (overview) {
+    } else if (isOverview()) {
       orbit.bearing -= dx*.006;
       orbit.elevation = clamp(orbit.elevation+dy*.004,.30,1.24);
     } else if (pointers.size === 1) {
@@ -129,9 +159,20 @@
     }
     dirty=true;
   };
+  function look(dyaw,dpitch) {
+    glance.yaw = clamp(glance.yaw+dyaw,-.32,.32);
+    glance.pitch = clamp(glance.pitch+dpitch,-.18,.18);
+  }
   function renderCamera() {
     let place;
-    if (overview) {
+    if (current === 'vista') {
+      const {eye,target} = pose();
+      camera.position.set(...eye);
+      camera.lookAt(...target);
+      camera.rotateOnWorldAxis(new THREE.Vector3(0,1,0),glance.yaw);
+      camera.rotateX(glance.pitch);
+      place = '橋の眺め・'+vistas[vista].name;
+    } else if (isOverview()) {
       // A portrait lens needs more horizontal clearance for both riverside facades.
       const distance = orbit.distance * Math.max(1,.52/camera.aspect);
       const horizontal = distance*Math.cos(orbit.elevation);
@@ -158,7 +199,9 @@
       return false;
     };
     const f=down('w')-down('s'), r=down('d')-down('a'), turn=down('q')-down('e');
-    if (overview) {
+    if (current === 'vista') {
+      if (turn) look(turn*dt*.6,0);
+    } else if (isOverview()) {
       if (f || r) pan(r*dt*orbit.distance*.28,f*dt*orbit.distance*.28);
       orbit.bearing+=turn*dt;
       const magnify=down('-')-(down('+')||down('='));
@@ -175,5 +218,8 @@
     if (f || r || turn || dirty) renderCamera();
     requestAnimationFrame(frame);
   }
+  const [, opening, choice] = /^(vista|overview)(?:-([ab]))?$/.exec(start) || [];
+  if (choice) compose(choice);
+  if (opening) mode(opening);
   onresize=size; size(); requestAnimationFrame(frame);
 })();

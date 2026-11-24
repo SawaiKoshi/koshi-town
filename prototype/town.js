@@ -17,6 +17,11 @@ sun.castShadow=true;
 Object.assign(sun.shadow.camera,{left:-43,right:43,top:39,bottom:-39,far:116});
 const shadowSize=Math.min(innerWidth<600?2048:4096,renderer.capabilities.maxTextureSize);
 sun.shadow.mapSize.set(shadowSize,shadowSize);sun.shadow.normalBias=.012;sun.shadow.bias=-.00007;
+// Warm light bounced off the river and paving reaches facades turned away from the low sun.
+const bounce=new T.DirectionalLight(0xffc08e,.62);bounce.position.set(30,12,34);scene.add(bounce);
+// Canopies read the sun's direction in view space to light the leaves it shines through.
+const sunView=new T.Vector3();
+scene.onBeforeRender=(_,__,view)=>sunView.copy(sun.position).sub(sun.target.position).transformDirection(view.matrixWorldInverse);
 const sky=new T.Mesh(new T.SphereGeometry(170,40,20),new T.ShaderMaterial({
  side:T.BackSide,depthWrite:false,
  vertexShader:'varying vec3 v;void main(){v=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -216,6 +221,17 @@ function herbGeometry(flower,distant=false){
 }
 geos.herb=herbGeometry(false);geos.spike=herbGeometry(true);geos.spikeFar=herbGeometry(true,true);
 finishes.herb=finishes.spike=finishes.spikeFar=new T.MeshLambertMaterial({vertexColors:true,side:T.DoubleSide});
+// Leaves turned from the sun glow faintly, and brightly where the viewer looks into the light.
+finishes.foliage=new T.MeshLambertMaterial({vertexColors:true});
+finishes.foliage.onBeforeCompile=shader=>{
+ shader.uniforms.sunView={value:sunView};
+ shader.fragmentShader='uniform vec3 sunView;\n'+shader.fragmentShader.replace('#include <opaque_fragment>',`
+  float back=max(-dot(normal,sunView),0.);
+  float into=pow(max(dot(normalize(-vViewPosition),sunView),0.),3.);
+  outgoingLight+=diffuseColor.rgb*vec3(1.,.80,.50)*(.16*back+.62*into*(.4+.6*back));
+  #include <opaque_fragment>`);
+};
+finishes.foliage.customProgramCacheKey=()=>'foliage-transmission';
 function bush(x,y,z,s,flowers=false){
  const m=transform.elements,wx=m[0]*x+m[8]*z+m[12],wz=m[2]*x+m[10]*z+m[14];
  const distant=Math.abs(wx)>19||wz< -36;
@@ -257,7 +273,7 @@ function palm(x,y,z,h){
        for(let k=0;k<3;k++){
          if((i+j+k)%13===0)continue;
          const u=(k+.5)/3;
-         box(side*width*u,py-.04-u*.11,r+u*.10,.105,.105,.115,pick(green),0,side*.13);
+         part('foliage',side*width*u,py-.04-u*.11,r+u*.10,.105,.105,.115,pick(green),0,side*.13);
        }
      }
    }
@@ -400,7 +416,43 @@ function riverbank(north){
 }
 riverbank(true);riverbank(false);
 const bridgeY=z=>z>9&&z<25?.42*Math.sin(Math.PI*(z-9)/16):0;
-for(let j=0;j<32;j++){let z=9.25+j*.5,y=bridgeY(z),inner=(j%10)-4.5;box(0,y-.22,z,5,.44,.52,'#bcab92');for(const side of [-1,1]){const deep=.34+1.64*(Math.abs(inner)/4.5)**2;box(side*2.36,y-.15-deep/2,z,.52,deep,.53,pick(stone))}}
+// The two stone colour draws per deck row are kept so every later random placement in the town stays put.
+for(let j=0;j<32;j++){const z=9.25+j*.5;box(0,bridgeY(z)-.22,z,5,.44,.52,'#bcab92');pick(stone);pick(stone)}
+// Three elliptical arches spring from cutwater piers just above the water. A ring of
+// voussoirs on each face and a darker barrel soffit make the openings read from the banks.
+const archCenters=[11.5,16.5,21.5],archHalf=2.08,springY=-1.92;
+const archCrown=zc=>bridgeY(zc)-.66;
+function intrados(z){
+ for(const zc of archCenters){const u=(z-zc)/archHalf;if(Math.abs(u)<1)return springY+(archCrown(zc)-springY)*Math.sqrt(1-u*u)}
+ return null;
+}
+const vary=i=>{const v=Math.sin(i*12.9898+4.1)*43758.5453;return v-Math.floor(v)};
+const archStone=['#dcc6a8','#e6d2b3','#d2bb9c','#e9d7bb','#cdb497'];
+for(const side of [-1,1]){
+ for(let k=0;k<64;k++){
+   const z0=9+k*.25,z=z0+.125,under=intrados(z),top=bridgeY(z)-.15,bottom=under===null?-2.36:under+.05;
+   rock(side*2.36,(top+bottom)/2,z,.52,top-bottom,.26,'#c8b293');
+ }
+ for(const [a,zc] of archCenters.entries()){
+   const b=archCrown(zc)-springY,blocks=19;
+   for(let i=0;i<blocks;i++){
+     const t0=Math.PI*i/blocks,t1=Math.PI*(i+1)/blocks,tm=(t0+t1)/2,key=i===9;
+     const depth=key?.50:i%2?.34:.40;
+     const iz=zc+archHalf*Math.cos(tm),iy=springY+b*Math.sin(tm);
+     let nz=b*Math.cos(tm),ny=archHalf*Math.sin(tm);const nl=Math.hypot(nz,ny);nz/=nl;ny/=nl;
+     const tz=-archHalf*Math.sin(tm),ty=b*Math.cos(tm),tl=Math.hypot(tz,ty);
+     const chord=Math.hypot(archHalf*(Math.cos(t1)-Math.cos(t0)),b*(Math.sin(t1)-Math.sin(t0)));
+     const tone=archStone[Math.floor(vary(a*40+i*2+side)*archStone.length)];
+     part('cutstone',side*(2.39+(key?.03:0)),iy+ny*depth/2,iz+nz*depth/2,.58,depth,chord-.025,tone,Math.atan2(-ty/tl,tz/tl));
+     if(side>0)part('cutstone',0,iy+ny*.13,iz+nz*.13,4.2,.2,chord+.02,'#8f7d69',Math.atan2(-ty/tl,tz/tl));
+   }
+ }
+ // Pointed cutwaters on the two river piers, stepped back under a sloping cap.
+ for(const zp of [14,19]){
+   part('cutstone',side*2.62,-1.97,zp,.62,.86,.62,'#c3ab8d',0,Math.PI/4);
+   part('cutstone',side*2.56,-1.47,zp,.48,.16,.48,'#d6c1a2',0,Math.PI/4);
+ }
+}
 for(const z of [9,14,19,24.8])for(const x of [-2.34,2.34]){box(x,bridgeY(z)+.45,z,.67,.91,.68,'#cfb897');if(z===9||z===24.8)lamp(x,bridgeY(z)+.90,z)}
 // Each cross-section joins both shop forecourts to the uphill lane.
 // Interpolating the two edges also gives the paving and walking limits the same bends.
@@ -754,6 +806,9 @@ salonFront(()=>{
 });
 // Gravel courtyards ground each shop. The public lane runs level with the steps.
 local(-10,0,-8,.60,()=>rock(0,.006,.75,13.5,.11,7.65,'#d4c0a3'));
+// The pendant row under PISOLA's eaves spills onto the timber front and its forecourt.
+const porch=new T.PointLight(0xffb066,7,13,2);
+porch.position.set(-.65,3.1,6.3).applyAxisAngle(new T.Vector3(0,1,0),.60).add(new T.Vector3(-10,0,-8));scene.add(porch);
 salonFront(()=>rock(0,.004,.68,8.86,.14,7.76,'#ceba9f'));
 local(2,height(-37),-37,.035,()=>{
  rock(0,.005,2.35,20.2,.12,6.7,'#d9d2bd');
@@ -780,8 +835,8 @@ function olive(x,y,z,h){
        if(Math.sin(u*3+j)>.80&&r>radius*.36)continue;
        const py=tip[1]+Math.sqrt(Math.max(0,radius*radius-r*r))*.60+(rand()-.5)*radius*.48;
        const px=tip[0]+dx,pz=tip[2]+dz,size=cell*(.65+rand()*.75);
-       const tone=py<tip[1]?pick(['#3f5736','#526838']):pick(['#657e40','#7d9248','#96a458','#acaf60']);
-       box(px,py,pz,size,size*(.78+rand()*.35),size,tone,0,(rand()-.5)*.16);
+       const tone=py<tip[1]?pick(['#4a6238','#5c713c']):pick(['#6a8341','#83974a','#9ca95a','#b3b463']);
+       part('foliage',px,py,pz,size,size*(.78+rand()*.35),size,tone,0,(rand()-.5)*.16);
      }
    }
  });

@@ -21,6 +21,7 @@ button { touch-action: manipulation; user-select: none }
 button:focus-visible, select:focus-visible { outline: 2px solid #ecad4f; outline-offset: 2px }
 nav { top: 14px; right: 14px }
 nav select { padding: 8px; min-height: 44px }
+#vistas { padding: 4px; color: #fff5dc; background: #25372ff2; border: 1px solid #e2d6b163; border-radius: 8px; box-shadow: 0 2px 10px #1e231d26 }
 footer { bottom: 14px; left: 14px; padding: 8px 14px; display: grid }
 footer span { font-size: 12px }
 #pad, #touch-help { display: none }
@@ -33,7 +34,8 @@ footer span { font-size: 12px }
   nav { top: 63px; left: 8px; right: auto }
   nav select { font-size: 13px; min-height: 38px }
   footer { left: 8px; bottom: 10px; max-width: calc(100% - 158px); padding: 6px 10px }
-  body.overview footer { max-width: calc(100% - 16px) }
+  body.overview footer, body.vista footer { max-width: calc(100% - 16px) }
+  .modes button[data-vista] { padding: 3px 9px }
   #desktop-help { display: none }
   #touch-help { display: block }
   #pad { right: 8px; bottom: 10px; display: grid; grid-template-columns: repeat(3,44px); gap: 3px }
@@ -49,10 +51,12 @@ footer span { font-size: 12px }
   <div class="modes" role="group" aria-label="カメラモード">
     <button data-mode="walk" aria-pressed="true">歩く</button>
     <button data-mode="overview" aria-pressed="false">街を眺める</button>
+    <button data-mode="vista" aria-pressed="false">橋の眺め</button>
   </div>
 </header>
 <nav aria-label="撮影地点">
   <select id="views" aria-label="視点を移す"><option value="">視点を移す</option><option value="bridge">石橋</option><option value="sister">SISTERの店先</option><option value="pisola">PISOLAの入口</option><option value="hill">丘の前庭</option></select>
+  <div id="vistas" class="modes" role="group" aria-label="眺めの構図" hidden><button data-vista="a" aria-pressed="true">案A 橋の脇</button><button data-vista="b" aria-pressed="false">案B 東岸の高台</button></div>
 </nav>
 <footer>
   <strong id="place">石橋</strong>
@@ -457,6 +461,11 @@ sun.castShadow=true;
 Object.assign(sun.shadow.camera,{left:-43,right:43,top:39,bottom:-39,far:116});
 const shadowSize=Math.min(innerWidth<600?2048:4096,renderer.capabilities.maxTextureSize);
 sun.shadow.mapSize.set(shadowSize,shadowSize);sun.shadow.normalBias=.012;sun.shadow.bias=-.00007;
+// Warm light bounced off the river and paving reaches facades turned away from the low sun.
+const bounce=new T.DirectionalLight(0xffc08e,.62);bounce.position.set(30,12,34);scene.add(bounce);
+// Canopies read the sun's direction in view space to light the leaves it shines through.
+const sunView=new T.Vector3();
+scene.onBeforeRender=(_,__,view)=>sunView.copy(sun.position).sub(sun.target.position).transformDirection(view.matrixWorldInverse);
 const sky=new T.Mesh(new T.SphereGeometry(170,40,20),new T.ShaderMaterial({
  side:T.BackSide,depthWrite:false,
  vertexShader:'varying vec3 v;void main(){v=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -656,6 +665,17 @@ function herbGeometry(flower,distant=false){
 }
 geos.herb=herbGeometry(false);geos.spike=herbGeometry(true);geos.spikeFar=herbGeometry(true,true);
 finishes.herb=finishes.spike=finishes.spikeFar=new T.MeshLambertMaterial({vertexColors:true,side:T.DoubleSide});
+// Leaves turned from the sun glow faintly, and brightly where the viewer looks into the light.
+finishes.foliage=new T.MeshLambertMaterial({vertexColors:true});
+finishes.foliage.onBeforeCompile=shader=>{
+ shader.uniforms.sunView={value:sunView};
+ shader.fragmentShader='uniform vec3 sunView;\n'+shader.fragmentShader.replace('#include <opaque_fragment>',`
+  float back=max(-dot(normal,sunView),0.);
+  float into=pow(max(dot(normalize(-vViewPosition),sunView),0.),3.);
+  outgoingLight+=diffuseColor.rgb*vec3(1.,.80,.50)*(.16*back+.62*into*(.4+.6*back));
+  #include <opaque_fragment>`);
+};
+finishes.foliage.customProgramCacheKey=()=>'foliage-transmission';
 function bush(x,y,z,s,flowers=false){
  const m=transform.elements,wx=m[0]*x+m[8]*z+m[12],wz=m[2]*x+m[10]*z+m[14];
  const distant=Math.abs(wx)>19||wz< -36;
@@ -697,7 +717,7 @@ function palm(x,y,z,h){
        for(let k=0;k<3;k++){
          if((i+j+k)%13===0)continue;
          const u=(k+.5)/3;
-         box(side*width*u,py-.04-u*.11,r+u*.10,.105,.105,.115,pick(green),0,side*.13);
+         part('foliage',side*width*u,py-.04-u*.11,r+u*.10,.105,.105,.115,pick(green),0,side*.13);
        }
      }
    }
@@ -840,7 +860,43 @@ function riverbank(north){
 }
 riverbank(true);riverbank(false);
 const bridgeY=z=>z>9&&z<25?.42*Math.sin(Math.PI*(z-9)/16):0;
-for(let j=0;j<32;j++){let z=9.25+j*.5,y=bridgeY(z),inner=(j%10)-4.5;box(0,y-.22,z,5,.44,.52,'#bcab92');for(const side of [-1,1]){const deep=.34+1.64*(Math.abs(inner)/4.5)**2;box(side*2.36,y-.15-deep/2,z,.52,deep,.53,pick(stone))}}
+// The two stone colour draws per deck row are kept so every later random placement in the town stays put.
+for(let j=0;j<32;j++){const z=9.25+j*.5;box(0,bridgeY(z)-.22,z,5,.44,.52,'#bcab92');pick(stone);pick(stone)}
+// Three elliptical arches spring from cutwater piers just above the water. A ring of
+// voussoirs on each face and a darker barrel soffit make the openings read from the banks.
+const archCenters=[11.5,16.5,21.5],archHalf=2.08,springY=-1.92;
+const archCrown=zc=>bridgeY(zc)-.66;
+function intrados(z){
+ for(const zc of archCenters){const u=(z-zc)/archHalf;if(Math.abs(u)<1)return springY+(archCrown(zc)-springY)*Math.sqrt(1-u*u)}
+ return null;
+}
+const vary=i=>{const v=Math.sin(i*12.9898+4.1)*43758.5453;return v-Math.floor(v)};
+const archStone=['#dcc6a8','#e6d2b3','#d2bb9c','#e9d7bb','#cdb497'];
+for(const side of [-1,1]){
+ for(let k=0;k<64;k++){
+   const z0=9+k*.25,z=z0+.125,under=intrados(z),top=bridgeY(z)-.15,bottom=under===null?-2.36:under+.05;
+   rock(side*2.36,(top+bottom)/2,z,.52,top-bottom,.26,'#c8b293');
+ }
+ for(const [a,zc] of archCenters.entries()){
+   const b=archCrown(zc)-springY,blocks=19;
+   for(let i=0;i<blocks;i++){
+     const t0=Math.PI*i/blocks,t1=Math.PI*(i+1)/blocks,tm=(t0+t1)/2,key=i===9;
+     const depth=key?.50:i%2?.34:.40;
+     const iz=zc+archHalf*Math.cos(tm),iy=springY+b*Math.sin(tm);
+     let nz=b*Math.cos(tm),ny=archHalf*Math.sin(tm);const nl=Math.hypot(nz,ny);nz/=nl;ny/=nl;
+     const tz=-archHalf*Math.sin(tm),ty=b*Math.cos(tm),tl=Math.hypot(tz,ty);
+     const chord=Math.hypot(archHalf*(Math.cos(t1)-Math.cos(t0)),b*(Math.sin(t1)-Math.sin(t0)));
+     const tone=archStone[Math.floor(vary(a*40+i*2+side)*archStone.length)];
+     part('cutstone',side*(2.39+(key?.03:0)),iy+ny*depth/2,iz+nz*depth/2,.58,depth,chord-.025,tone,Math.atan2(-ty/tl,tz/tl));
+     if(side>0)part('cutstone',0,iy+ny*.13,iz+nz*.13,4.2,.2,chord+.02,'#8f7d69',Math.atan2(-ty/tl,tz/tl));
+   }
+ }
+ // Pointed cutwaters on the two river piers, stepped back under a sloping cap.
+ for(const zp of [14,19]){
+   part('cutstone',side*2.62,-1.97,zp,.62,.86,.62,'#c3ab8d',0,Math.PI/4);
+   part('cutstone',side*2.56,-1.47,zp,.48,.16,.48,'#d6c1a2',0,Math.PI/4);
+ }
+}
 for(const z of [9,14,19,24.8])for(const x of [-2.34,2.34]){box(x,bridgeY(z)+.45,z,.67,.91,.68,'#cfb897');if(z===9||z===24.8)lamp(x,bridgeY(z)+.90,z)}
 // Each cross-section joins both shop forecourts to the uphill lane.
 // Interpolating the two edges also gives the paving and walking limits the same bends.
@@ -1194,6 +1250,9 @@ salonFront(()=>{
 });
 // Gravel courtyards ground each shop. The public lane runs level with the steps.
 local(-10,0,-8,.60,()=>rock(0,.006,.75,13.5,.11,7.65,'#d4c0a3'));
+// The pendant row under PISOLA's eaves spills onto the timber front and its forecourt.
+const porch=new T.PointLight(0xffb066,7,13,2);
+porch.position.set(-.65,3.1,6.3).applyAxisAngle(new T.Vector3(0,1,0),.60).add(new T.Vector3(-10,0,-8));scene.add(porch);
 salonFront(()=>rock(0,.004,.68,8.86,.14,7.76,'#ceba9f'));
 local(2,height(-37),-37,.035,()=>{
  rock(0,.005,2.35,20.2,.12,6.7,'#d9d2bd');
@@ -1220,8 +1279,8 @@ function olive(x,y,z,h){
        if(Math.sin(u*3+j)>.80&&r>radius*.36)continue;
        const py=tip[1]+Math.sqrt(Math.max(0,radius*radius-r*r))*.60+(rand()-.5)*radius*.48;
        const px=tip[0]+dx,pz=tip[2]+dz,size=cell*(.65+rand()*.75);
-       const tone=py<tip[1]?pick(['#3f5736','#526838']):pick(['#657e40','#7d9248','#96a458','#acaf60']);
-       box(px,py,pz,size,size*(.78+rand()*.35),size,tone,0,(rand()-.5)*.16);
+       const tone=py<tip[1]?pick(['#4a6238','#5c713c']):pick(['#6a8341','#83974a','#9ca95a','#b3b463']);
+       part('foliage',px,py,pz,size,size*(.78+rand()*.35),size,tone,0,(rand()-.5)*.16);
      }
    }
  });
@@ -1297,15 +1356,28 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
   const doors = [
     ['SISTERの入口',...town.salonDoor], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
   ];
+  // Fixed vantage points beside the bridge: river and arches in front, PISOLA left,
+  // SISTER right, the lane and gallery behind. Portrait screens get their own framing.
+  const vistas = {
+    a: {name:'案A 橋の脇', wide:{eye:[9.0,4.0,27.8],target:[-2.8,.9,-6],fov:54},
+      narrow:{eye:[9.2,4.0,28.2],target:[-2.6,.2,-6],fov:68}},
+    b: {name:'案B 東岸の高台', wide:{eye:[6.8,6.8,31.5],target:[-1.8,1,-7],fov:47},
+      narrow:{eye:[6.8,8.6,37],target:[-2.2,1.2,-8],fov:66}}
+  };
   const select = document.querySelector('#views');
+  const picker = document.querySelector('#vistas');
   const keys = new Set(), pointers = new Map(), padKeys = new Map();
   const aliases = {arrowup:'w', arrowdown:'s', arrowleft:'a', arrowright:'d'};
   const clamp = THREE.MathUtils.clamp;
   const start = location.hash.slice(1);
   let [x,z,yaw,pitch] = Object.hasOwn(views,start) ? views[start] : views.bridge;
+  // The vantage keeps its own small look-around offset; walking state is never touched.
+  let vista = 'a', glance = {yaw:0, pitch:0};
   // This rig has its own focus, lens and orbit. Walking coordinates stay in metres.
   const orbit = {x:0, z:-4, bearing:-.45, elevation:.47, distance:62};
-  let overview = false, dirty = true, last = performance.now();
+  let current = 'walk', dirty = true, last = performance.now();
+  const isOverview = () => current === 'overview';
+  const pose = () => vistas[vista][camera.aspect < .8 ? 'narrow' : 'wide'];
 
   function clearInput() {
     for (const [id,btn] of padKeys) if (btn.hasPointerCapture(id)) btn.releasePointerCapture(id);
@@ -1315,34 +1387,45 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
   function size() {
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight;
-    camera.fov = overview ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
+    camera.fov = current === 'vista' ? pose().fov
+      : isOverview() ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
     camera.updateProjectionMatrix();
     dirty = true;
   }
+  const help = {
+    walk: ['WASD・矢印で歩く　ドラッグで見回す', '方向ボタンで歩く　ドラッグで見回す'],
+    overview: ['ドラッグで回転　ホイールでズーム　右ドラッグ・矢印で移動', '1本指で回転　2本指で移動・ピンチでズーム'],
+    vista: ['ドラッグ・Q/Eで少し見回す　案A・案Bで構図を切り替え', '1本指で少し見回す　案A・案Bで構図を切り替え']
+  };
   function mode(next) {
-    if (next === overview) return;
+    if (next === current) return;
     clearInput();
-    overview = next;
-    document.body.classList.toggle('overview', next);
+    current = next;
+    glance = {yaw:0, pitch:0};
+    document.body.classList.toggle('overview', next === 'overview');
+    document.body.classList.toggle('vista', next === 'vista');
     for (const b of document.querySelectorAll('[data-mode]')) {
-      b.setAttribute('aria-pressed', String((b.dataset.mode === 'overview') === next));
+      b.setAttribute('aria-pressed', String(b.dataset.mode === next));
     }
-    select.parentElement.hidden = next;
-    document.querySelector('#pad').hidden = next;
-    document.querySelector('#desktop-help').textContent = next
-      ? 'ドラッグで回転　ホイールでズーム　右ドラッグ・矢印で移動'
-      : 'WASD・矢印で歩く　ドラッグで見回す';
-    document.querySelector('#touch-help').textContent = next
-      ? '1本指で回転　2本指で移動・ピンチでズーム'
-      : '方向ボタンで歩く　ドラッグで見回す';
+    select.hidden = next !== 'walk';
+    picker.hidden = next !== 'vista';
+    document.querySelector('#pad').hidden = next !== 'walk';
+    document.querySelector('#desktop-help').textContent = help[next][0];
+    document.querySelector('#touch-help').textContent = help[next][1];
     size();
     canvas.focus({preventScroll:true});
   }
-  for (const b of document.querySelectorAll('[data-mode]')) {
-    const activate = () => mode(b.dataset.mode === 'overview');
+  function compose(name) {
+    vista = name; glance = {yaw:0, pitch:0};
+    for (const b of picker.querySelectorAll('[data-vista]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.vista === name));
+    }
+    size();
+  }
+  function onTap(b, activate) {
     b.onclick = activate;
     // After a canvas drag some touch browsers suppress the next compatibility click.
-    // Accept a completed tap as well; mode() is idempotent when both events fire.
+    // Accept a completed tap as well; both handlers are idempotent when both events fire.
     let tap;
     b.onpointerdown = e => {
       if (e.pointerType === 'touch') tap = {id:e.pointerId,x:e.clientX,y:e.clientY};
@@ -1352,6 +1435,10 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
       if (tap?.id === e.pointerId && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<10) activate();
       tap = null;
     };
+  }
+  for (const b of document.querySelectorAll('[data-mode]')) onTap(b, () => mode(b.dataset.mode));
+  for (const b of picker.querySelectorAll('[data-vista]')) {
+    onTap(b, () => { compose(b.dataset.vista); canvas.focus({preventScroll:true}) });
   }
   select.onchange = () => {
     clearInput();
@@ -1381,7 +1468,7 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
   }
   canvas.oncontextmenu = e => e.preventDefault();
   canvas.onwheel = e => {
-    if (!overview) return;
+    if (!isOverview()) return;
     e.preventDefault();
     const pixels = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
     zoom(Math.exp(clamp(pixels,-240,240)*.0016));
@@ -1398,7 +1485,7 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
   canvas.onpointermove = e => {
     const p = pointers.get(e.pointerId);
     if (!p) return;
-    const two = pointers.size === 2 && overview;
+    const two = pointers.size === 2 && isOverview();
     const old = two && pair(), dx=e.clientX-p.x, dy=e.clientY-p.y;
     p.x=e.clientX; p.y=e.clientY;
     if (pointers.size > 2) return;
@@ -1407,9 +1494,11 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
       const now = pair();
       pan((old.x-now.x)*units,(now.y-old.y)*units);
       zoom(old.span/now.span);
-    } else if (overview && (e.buttons === 2 || e.shiftKey)) {
+    } else if (current === 'vista') {
+      if (pointers.size === 1) look(-dx*.003,-dy*.003);
+    } else if (isOverview() && (e.buttons === 2 || e.shiftKey)) {
       pan(-dx*units,dy*units);
-    } else if (overview) {
+    } else if (isOverview()) {
       orbit.bearing -= dx*.006;
       orbit.elevation = clamp(orbit.elevation+dy*.004,.30,1.24);
     } else if (pointers.size === 1) {
@@ -1418,9 +1507,20 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
     }
     dirty=true;
   };
+  function look(dyaw,dpitch) {
+    glance.yaw = clamp(glance.yaw+dyaw,-.32,.32);
+    glance.pitch = clamp(glance.pitch+dpitch,-.18,.18);
+  }
   function renderCamera() {
     let place;
-    if (overview) {
+    if (current === 'vista') {
+      const {eye,target} = pose();
+      camera.position.set(...eye);
+      camera.lookAt(...target);
+      camera.rotateOnWorldAxis(new THREE.Vector3(0,1,0),glance.yaw);
+      camera.rotateX(glance.pitch);
+      place = '橋の眺め・'+vistas[vista].name;
+    } else if (isOverview()) {
       // A portrait lens needs more horizontal clearance for both riverside facades.
       const distance = orbit.distance * Math.max(1,.52/camera.aspect);
       const horizontal = distance*Math.cos(orbit.elevation);
@@ -1447,7 +1547,9 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
       return false;
     };
     const f=down('w')-down('s'), r=down('d')-down('a'), turn=down('q')-down('e');
-    if (overview) {
+    if (current === 'vista') {
+      if (turn) look(turn*dt*.6,0);
+    } else if (isOverview()) {
       if (f || r) pan(r*dt*orbit.distance*.28,f*dt*orbit.distance*.28);
       orbit.bearing+=turn*dt;
       const magnify=down('-')-(down('+')||down('='));
@@ -1464,6 +1566,9 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
     if (f || r || turn || dirty) renderCamera();
     requestAnimationFrame(frame);
   }
+  const [, opening, choice] = /^(vista|overview)(?:-([ab]))?$/.exec(start) || [];
+  if (choice) compose(choice);
+  if (opening) mode(opening);
   onresize=size; size(); requestAnimationFrame(frame);
 })();
 </script>
