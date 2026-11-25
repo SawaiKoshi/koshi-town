@@ -56,10 +56,25 @@ fi
 
 echo "== 7/7 3D試作のレビュー用ファイル"
 if [ -d prototype/review ]; then
+  # 本物の Python 3 を探す（Windows の python3 は Microsoft Store の案内のことがあるため、
+  # run-guard.sh と同じく python3 → python → py -3 の順に、実際に起動できるかを確かめる）
+  py=""
+  for candidate in python3 python "py -3"; do
+    # shellcheck disable=SC2086
+    if $candidate -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+      py="$candidate"
+      break
+    fi
+  done
+  if [ -z "$py" ]; then
+    echo "Python 3 が見つかりません。Python 3.8 以上を入れてください。" >&2
+    exit 1
+  fi
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
   cp -r prototype "$tmp/"
-  python3 -I "$tmp/prototype/review/build_walk.py"
+  # shellcheck disable=SC2086
+  $py -I "$tmp/prototype/review/build_walk.py"
   if ! cmp -s <(tr -d '\r' < "$tmp/prototype/review/walk.html") <(tr -d '\r' < prototype/review/walk.html); then
     echo "prototype/review/walk.html が今のソースから作り直した結果と違います。python3 prototype/review/build_walk.py を実行してコミットしてください。" >&2
     exit 1
