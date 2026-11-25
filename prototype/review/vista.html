@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>橋の眺めの構図2案 ｜ 川辺の制作街</title>
+<title>橋の眺め（採用案B） ｜ 川辺の制作街</title>
 <style>
   * { box-sizing: border-box }
   body { max-width: 1500px; margin: auto; padding: 20px; background: #f8f4ec; color: #292d28; font: 1rem/1.55 system-ui,sans-serif }
@@ -16,101 +16,92 @@
   .grid { display: grid; gap: 12px; grid-template-columns: repeat(3,minmax(0,1fr)) }
   .pair { display: grid; gap: 12px; grid-template-columns: repeat(2,minmax(0,1fr)) }
   .mobile .grid { grid-template-columns: minmax(0,2.2fr) repeat(2,minmax(0,1fr)); align-items: start }
+  .ui { grid-template-columns: minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1fr); align-items: start }
   figure { margin: 0 } figcaption { margin-bottom: .35rem; font-size: .86rem }
   figcaption b { font-size: .95rem }
   img { width: 100%; height: auto; display: block; border-radius: 5px }
-  ul { margin: .2rem 0 .4rem; padding-left: 1.2rem; font-size: .88rem }
+  ul { margin: .2rem 0 .4rem; padding-left: 1.2rem; font-size: .9rem; max-width: 80ch }
+  .scroll { overflow-x: auto }
   table { border-collapse: collapse; font-size: .88rem; margin: .4rem 0 }
-  th, td { border-bottom: 1px solid #d9d0bf; padding: .3rem .7rem; text-align: right }
-  th:first-child, td:first-child { text-align: left }
+  th, td { border-bottom: 1px solid #d9d0bf; padding: .3rem .7rem; text-align: right; white-space: nowrap }
+  th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 9em }
+  td.now { font-weight: 600 }
   .note { font-size: .86rem; color: #5a5f57 }
   [hidden] { display: none }
   @media(max-width:760px){
-    body{padding:12px}
-    .grid,.mobile .grid{grid-template-columns:1fr 1fr}
+    body{padding:12px 16px}
+    .grid,.mobile .grid,.ui{grid-template-columns:1fr 1fr}
     .grid figure:first-child{grid-column:1/-1}
     .pair{grid-template-columns:1fr}
   }
 </style>
-<header><h1>橋の眺めの構図2案</h1>
-  <div class="open"><a href="walk.html#vista-a">案Aを操作して見る →</a><a href="walk.html#vista-b">案Bを操作して見る →</a></div>
+<header><h1>橋の眺め（採用案B 東岸の高台）</h1>
+  <div class="open"><a href="walk.html#vista">操作して見る →</a></div>
 </header>
-<p>石橋の脇から、手前に川とアーチ、左にPISOLA、右にSISTER、奥に坂と展示館が重なる構図を探しました。どちらも「橋の眺め」モードで固定した鑑賞視点で、ドラッグで少しだけ見回せます。歩行開始位置と「街を眺める」の自由操作はそのまま残しています。</p>
+<p>2案のうち、曲がる坂と展示館の正面全体が見える案B「東岸の高台」を採用し、案Aは削除しました。案Bの弱点だった「アーチが見えない」「縦長画面で空が多い」を、坂と展示館の見え方を保ったまま調整しています。あわせて、返り光で浅くなっていた陰影を戻しました。</p>
 <div class="options" role="group" aria-label="撮影サイズ">
   <label><input type="radio" name="size" value="desktop" checked> PC · 1280 × 800</label>
   <label><input type="radio" name="size" value="mobile"> スマホ · 375 × 812</label>
 </div>
 
 <section class="desktop" data-size="desktop" aria-label="PCの比較">
-  <h2>理想画像と2案</h2>
+  <h2>理想画像と調整前後</h2>
   <div class="grid">
     <figure><figcaption><b>理想画像</b> · 夕景コンセプト</figcaption><a href="ideal-evening.jpg"><img src="ideal-evening.jpg" alt="理想画像。手前左に川と石橋のアーチ、左にPISOLA、右にSISTER、奥に曲がる坂と展示館"></a></figure>
-    <figure><figcaption><b>案A 橋の脇</b> · 南東岸の高さ4m</figcaption><a href="vista-a-1280.jpg"><img src="vista-a-1280.jpg" alt="案A。手前に川と3連アーチ、左上にオリーブの葉、左にPISOLA、右にSISTER"></a></figure>
-    <figure><figcaption><b>案B 東岸の高台</b> · 南東岸の高さ6.8m</figcaption><a href="vista-b-1280.jpg"><img src="vista-b-1280.jpg" alt="案B。手前に橋と川、左にオリーブとPISOLA、右にSISTER、中央奥に坂と展示館"></a></figure>
+    <figure><figcaption><b>調整前の案B</b> · 9c462ee</figcaption><a href="vista-before-1280.jpg"><img src="vista-before-1280.jpg" alt="調整前。高い位置から橋を見下ろし、アーチはほとんど見えない"></a></figure>
+    <figure><figcaption><b>調整後</b></figcaption><a href="vista-1280.jpg"><img src="vista-1280.jpg" alt="調整後。手前の橋に2つのアーチが見え、奥の坂と展示館の正面がSISTERの屋根の上に見える"></a></figure>
   </div>
 </section>
 <section class="mobile" data-size="mobile" aria-label="スマホ幅の比較" hidden>
-  <h2>理想画像と2案</h2>
+  <h2>理想画像と調整前後</h2>
   <div class="grid">
     <figure><figcaption><b>理想画像</b> · 夕景コンセプト</figcaption><a href="ideal-evening.jpg"><img src="ideal-evening.jpg" alt="理想画像"></a></figure>
-    <figure><figcaption><b>案A 橋の脇</b></figcaption><a href="vista-a-375.jpg"><img src="vista-a-375.jpg" alt="スマホ幅の案A"></a></figure>
-    <figure><figcaption><b>案B 東岸の高台</b></figcaption><a href="vista-b-375.jpg"><img src="vista-b-375.jpg" alt="スマホ幅の案B"></a></figure>
+    <figure><figcaption><b>調整前の案B</b></figcaption><a href="vista-before-375.jpg"><img src="vista-before-375.jpg" alt="スマホ幅の調整前。上の約4分の1が空で、アーチは見えない"></a></figure>
+    <figure><figcaption><b>調整後</b></figcaption><a href="vista-375.jpg"><img src="vista-375.jpg" alt="スマホ幅の調整後。空は上の2割、手前は川と2つのアーチ"></a></figure>
   </div>
-  <p class="note">縦長画面では、両店舗が収まるよう案ごとに別のカメラ位置と画角を使っています。</p>
+  <p class="note">縦長画面（縦横比0.8未満）は、横長とは別のカメラ位置と画角を使います。</p>
 </section>
 
-<h2>2案の違い</h2>
-<div class="pair">
-  <div>
-    <b>案A 橋の脇</b>
-    <ul>
-      <li>3連アーチと水面が手前の3分の1を占め、理想画像の「川と橋」に最も近い。</li>
-      <li>左上にオリーブの葉が入り、理想画像の枠取りと同じ位置になる。</li>
-      <li>展示館はSISTERの陰に入り、棟番号「3」と高窓の一部だけが見える。坂は店の間に短く見える。</li>
-    </ul>
-  </div>
-  <div>
-    <b>案B 東岸の高台</b>
-    <ul>
-      <li>坂が曲がりながら展示館の前庭へ上がる様子と、展示館の正面全体が見える。</li>
-      <li>橋は手前で斜めに入るが、高い位置から見下ろすためアーチはほとんど見えない。</li>
-      <li>オリーブは左端の中段にあり、理想画像より低い位置で枠取りする。</li>
-    </ul>
-  </div>
-</div>
+<h2>構図の調整</h2>
+<ul>
+  <li><b>横長</b>：カメラを東へ3.2m・後ろへ1m・下へ0.6m動かし、画角を47°から45°にしました。手前の橋のアーチが2つ読めます。展示館の正面全体は、SISTERの屋根より上に見えたままです。</li>
+  <li><b>縦長</b>：カメラを東へ3m・前へ7.5m・下へ1.6m動かして川の上（南岸の手前）へ出し、注視点を下げて画角を66°から84°にしました。空だけの行は画面上部の23.6%から20.0%に減りました。PISOLAとSISTERは両方とも画面内に収まり、左右の余白はそれぞれ約14px・約8pxです。手前は水面と岸の花で、アーチも2つ見えます。</li>
+  <li><b>中間の縦横比</b>：各構図は基準の縦横比（横長16:10、縦長375×812）で決めています。それより幅の狭い窓では、両店が切れないよう画角を自動で広げます。たとえば800×1000の窓では79.3°になり、そのぶん空が多く見えます。</li>
+</ul>
 
-<h2>左上の葉とPISOLA周辺の暗部</h2>
-<p>夕日と反対側を向く面に、川と石畳から返る弱い暖色光を足しました。PISOLAの軒下には、ペンダント照明の光が店先へこぼれる点光源を置いています。葉は太陽を背にした面が薄く透け、太陽の方向を見たときに黄緑に光ります。</p>
+<h2>陰影の調整</h2>
+<p>返り光を0.62から0.30に弱め、色を暖色からやや青寄りの中立色に変えました。日陰の赤みは返り光を入れる前とほぼ同じに戻り、日向との差も広がりました。葉とPISOLAの暗部は、返り光を入れる前（7a57916）より少ない状態を保っているため、点光源の追加は不要と判断しました。</p>
 <div class="pair">
-  <figure><figcaption>変更前 · 7a57916（案Aと同じカメラ）</figcaption><a href="before-vista-a-1280.jpg"><img src="before-vista-a-1280.jpg" alt="変更前。左上の葉とPISOLAの正面が暗い"></a></figure>
-  <figure><figcaption>変更後</figcaption><a href="vista-a-1280.jpg"><img src="vista-a-1280.jpg" alt="変更後。葉が黄緑に透け、PISOLAの木部と窓が読める"></a></figure>
-  <figure><figcaption>変更前 · 7a57916（案Bと同じカメラ）</figcaption><a href="before-vista-b-1280.jpg"><img src="before-vista-b-1280.jpg" alt="変更前の案B視点"></a></figure>
-  <figure><figcaption>変更後</figcaption><a href="vista-b-1280.jpg"><img src="vista-b-1280.jpg" alt="変更後の案B視点"></a></figure>
+  <figure><figcaption>調整前 · 9c462ee（返り光0.62・暖色）</figcaption><a href="shade-before-1280.jpg"><img src="shade-before-1280.jpg" alt="調整前の陰影。SISTERの日陰の側面が赤く明るい"></a></figure>
+  <figure><figcaption>調整後（返り光0.30・やや青寄り）</figcaption><a href="vista-1280.jpg"><img src="vista-1280.jpg" alt="調整後の陰影。SISTERの日陰の側面が落ち着いた色になる"></a></figure>
 </div>
-<table>
-  <caption class="note">1280×800の同一カメラで測った画面領域の輝度（0〜255）。暗部は輝度60未満の画素の割合。</caption>
-  <tr><th>領域</th><th>変更前 平均</th><th>変更後 平均</th><th>変更前 暗部</th><th>変更後 暗部</th></tr>
-  <tr><td>案A 左上の葉</td><td>85.8</td><td>104.5</td><td>63.2%</td><td>18.7%</td></tr>
-  <tr><td>案A PISOLA正面</td><td>67.7</td><td>82.2</td><td>53.3%</td><td>27.0%</td></tr>
-  <tr><td>案B 左の葉</td><td>62.4</td><td>82.1</td><td>66.6%</td><td>18.1%</td></tr>
-  <tr><td>案B PISOLA正面</td><td>67.0</td><td>81.4</td><td>55.7%</td><td>28.0%</td></tr>
-</table>
-<p class="note">返り光は全体に効くため、SISTERの側面など日陰の面もやや明るくなり、陰影は前回より浅くなっています。</p>
+<p class="note">調整後の構図と同じカメラで測った値。輝度は0〜255、暗部は輝度60未満の画素の割合。SISTERの壁はれんが色の画素だけを数えた。</p>
+<div class="scroll"><table>
+  <tr><th>項目</th><th>7a57916（返り光なし）</th><th>9c462ee（0.62・暖色）</th><th>今回（0.30・やや青）</th></tr>
+  <tr><td>PC　SISTERの日向／日陰の輝度比</td><td>2.57</td><td>1.85</td><td class="now">2.05</td></tr>
+  <tr><td>PC　SISTER日陰の赤／青の比</td><td>2.19</td><td>3.04</td><td class="now">2.23</td></tr>
+  <tr><td>PC　左上の葉の暗部</td><td>65.1%</td><td>22.8%</td><td class="now">30.8%</td></tr>
+  <tr><td>PC　PISOLA正面の暗部</td><td>53.5%</td><td>26.7%</td><td class="now">30.7%</td></tr>
+  <tr><td>スマホ　SISTERの日向／日陰の輝度比</td><td>2.63</td><td>1.89</td><td class="now">2.09</td></tr>
+  <tr><td>スマホ　SISTER日陰の赤／青の比</td><td>2.21</td><td>3.05</td><td class="now">2.24</td></tr>
+  <tr><td>スマホ　PISOLA正面の暗部</td><td>52.9%</td><td>23.9%</td><td class="now">29.2%</td></tr>
+</table></div>
+<p class="note">縦長の構図では、オリーブの葉はほとんど画面に入らないため、葉の値は測っていません。</p>
 
 <h2>橋のアーチ</h2>
-<p>前回までの橋は側面が段状の箱で、横から見てもアーチに読めませんでした。歩行の通路と判定は変えずに、3連の楕円アーチ、迫石の輪、要石、暗めの穹窿の裏面、橋脚の水切りを加えています。</p>
+<p>677d0e7 で、段状の箱だった橋の側面を3連の楕円アーチに作り替えました（迫石・要石・アーチ裏面・橋脚の水切り）。歩行の通路と通行判定は変えていません。</p>
 <div class="pair">
   <figure><figcaption>変更前 · 7a57916</figcaption><a href="before-arch-1280.jpg"><img src="before-arch-1280.jpg" alt="変更前の橋の側面。段状の箱が並ぶ"></a></figure>
   <figure><figcaption>変更後</figcaption><a href="arch-1280.jpg"><img src="arch-1280.jpg" alt="変更後の橋の側面。迫石の輪で3連アーチが読める"></a></figure>
 </div>
 
 <h2>操作画面</h2>
-<div class="grid">
-  <figure><figcaption>PC · 「橋の眺め」選択中</figcaption><a href="vista-ui-1280.jpg"><img src="vista-ui-1280.jpg" alt="PCの操作画面。右上に案Aと案Bの切り替え"></a></figure>
-  <figure><figcaption>スマホ · 案B選択中</figcaption><a href="vista-ui-375.jpg"><img src="vista-ui-375.jpg" alt="スマホ幅の操作画面"></a></figure>
+<div class="grid ui">
+  <figure><figcaption>PC · 「橋の眺め」選択中</figcaption><a href="vista-ui-1280.jpg"><img src="vista-ui-1280.jpg" alt="PCの操作画面。見出しで「橋の眺め」が選ばれ、左下に操作説明"></a></figure>
+  <figure><figcaption>スマホ · 「橋の眺め」選択中</figcaption><a href="vista-ui-375.jpg"><img src="vista-ui-375.jpg" alt="スマホ幅の操作画面。方向ボタンは隠れる"></a></figure>
   <div class="note">
-    <p>見出しの「歩く／街を眺める／橋の眺め」でモードを選びます。「橋の眺め」では案Aと案Bを切り替えられ、ドラッグ（PCはQ/Eも可）で左右約18°、上下約10°まで見回せます。案のボタンをもう一度押すと元の構図に戻ります。</p>
-    <p>「歩く」に戻ると、鑑賞前の歩行位置と向きから再開します。</p>
+    <p>見出しの「歩く／街を眺める／橋の眺め」でモードを選びます。「橋の眺め」ではドラッグ（PCはQ/Eも可）で左右約18°、上下約10°まで見回せます。鑑賞中にもう一度「橋の眺め」を押すと、元の構図に戻ります。</p>
+    <p>「歩く」に戻ると、鑑賞前の歩行位置と向きから再開します。URLの <code>#vista</code> で直接開けます。</p>
   </div>
 </div>
 <script>
