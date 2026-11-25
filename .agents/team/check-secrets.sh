@@ -29,7 +29,7 @@ if [ -z "$py" ]; then
 fi
 
 # shellcheck disable=SC2086
-$py -I - "$merge_base" <<'PY'
+$py -X utf8 -I - "$merge_base" <<'PY'
 import re
 import subprocess
 import sys

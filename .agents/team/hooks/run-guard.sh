@@ -11,7 +11,7 @@ for candidate in python3 python "py -3"; do
   # shellcheck disable=SC2086
   if $candidate -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
     # shellcheck disable=SC2086
-    printf '%s' "$input" | $candidate -I "$here/guard.py"
+    printf '%s' "$input" | $candidate -X utf8 -I "$here/guard.py"
     status=$?
     if [ "$status" -eq 0 ]; then
       exit 0
