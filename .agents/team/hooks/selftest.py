@@ -5,7 +5,9 @@
 """
 
 import json
+import os
 import pathlib
+import shutil
 import subprocess
 import sys
 
@@ -133,26 +135,41 @@ def run(tool, tool_input):
     proc = subprocess.run(
         [sys.executable, "-I", str(GUARD)],
         input=json.dumps({"tool_name": tool, "tool_input": tool_input}),
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     return proc.returncode
 
 
-WRAPPER = GUARD.with_name("run-guard.sh")
+WRAPPER = GUARD.with_name("run-guard.sh").as_posix()
+
+
+def find_bash():
+    """Claude Code がフックに使う bash を探す。Windows では Git Bash を優先する
+    （単に bash と呼ぶと WSL の bash.exe が起動することがあるため）。"""
+    if os.name == "nt":
+        git = shutil.which("git")
+        if git:
+            for root in pathlib.Path(git).resolve().parents[1:3]:
+                candidate = root / "bin" / "bash.exe"
+                if candidate.exists():
+                    return candidate.as_posix()
+    return shutil.which("bash") or "/bin/bash"
+
+
+BASH = find_bash()
 
 
 def run_wrapper(command, env=None):
     """settings.json と同じ形（bash run-guard.sh || exit 2）で入口を起動する。"""
     proc = subprocess.run(
-        ["bash", "-c", f'bash "{WRAPPER}" || exit 2'],
+        [BASH, "-c", f'"{BASH}" "{WRAPPER}" || exit 2'],
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
-        capture_output=True, text=True, env=env,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
     )
     return proc.returncode
 
 
 def wrapper_checks():
-    import os
     failures = []
     if run_wrapper("rm -rf build") != 2:
         failures.append("入口経由で、止まるべきなのに通った: rm -rf build")
@@ -161,21 +178,24 @@ def wrapper_checks():
     # Python が見つからない環境（Windows の Store 版 python3 だけ、など）では止まること
     no_python = dict(os.environ, PATH="/nonexistent")
     proc = subprocess.run(
-        ["/bin/bash", "-c", f'/bin/bash "{WRAPPER}" || exit 2'],
+        [BASH, "-c", f'"{BASH}" "{WRAPPER}" || exit 2'],
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": "git status"}}),
-        capture_output=True, text=True, env=no_python,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=no_python,
     )
     if proc.returncode != 2:
         failures.append("Python が見つからないのに止まらなかった")
     # 入口のファイルがない場合も止まること（settings.json の || exit 2）
-    proc = subprocess.run(["bash", "-c", 'bash "/nonexistent/run-guard.sh" || exit 2'],
-                          input="{}", capture_output=True, text=True)
+    proc = subprocess.run([BASH, "-c", f'"{BASH}" "/nonexistent/run-guard.sh" || exit 2'],
+                          input="{}", capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 2:
         failures.append("入口のファイルがないのに止まらなかった")
     return failures, 4
 
 
 def main():
+    # Windows の既定（CP932）ではなく UTF-8 で結果を出す（ガードのメッセージも UTF-8）
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     failures = []
     for cmd in BLOCK_BASH:
         if run("Bash", {"command": cmd}) != 2:
