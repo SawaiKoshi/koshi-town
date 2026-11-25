@@ -13,7 +13,23 @@ if ! git rev-parse --verify --quiet "$base" >/dev/null; then
 fi
 merge_base="$(git merge-base "$base" HEAD)"
 
-python3 -I - "$merge_base" <<'PY'
+# 本物の Python 3 を探す（Windows の python3 は Microsoft Store の案内のことがあるため、
+# run-guard.sh と同じく python3 → python → py -3 の順に、実際に起動できるかを確かめる）
+py=""
+for candidate in python3 python "py -3"; do
+  # shellcheck disable=SC2086
+  if $candidate -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+    py="$candidate"
+    break
+  fi
+done
+if [ -z "$py" ]; then
+  echo "Python 3 が見つかりません。Python 3.8 以上を入れてください。" >&2
+  exit 1
+fi
+
+# shellcheck disable=SC2086
+$py -I - "$merge_base" <<'PY'
 import re
 import subprocess
 import sys
