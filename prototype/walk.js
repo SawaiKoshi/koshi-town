@@ -8,28 +8,29 @@
   const doors = [
     ['SISTERの入口',...town.salonDoor], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
   ];
-  // Fixed vantage points beside the bridge: river and arches in front, PISOLA left,
-  // SISTER right, the lane and gallery behind. Portrait screens get their own framing.
-  const vistas = {
-    a: {name:'案A 橋の脇', wide:{eye:[9.0,4.0,27.8],target:[-2.8,.9,-6],fov:54},
-      narrow:{eye:[9.2,4.0,28.2],target:[-2.6,.2,-6],fov:68}},
-    b: {name:'案B 東岸の高台', wide:{eye:[6.8,6.8,31.5],target:[-1.8,1,-7],fov:47},
-      narrow:{eye:[6.8,8.6,37],target:[-2.2,1.2,-8],fov:66}}
+  // A fixed vantage on the east bank: two bridge arches and the river in front, PISOLA left,
+  // SISTER right, the curving lane and the whole gallery front behind. Portrait screens get
+  // their own framing. Each is composed at its reference aspect; narrower windows widen the lens.
+  const vista = {
+    wide:{eye:[10,6.2,32.5],target:[-2,1,-7],fov:45,aspect:1.6},
+    narrow:{eye:[9.8,7,29.5],target:[-.3,-5.2,-7],fov:84,aspect:375/812}
   };
   const select = document.querySelector('#views');
-  const picker = document.querySelector('#vistas');
   const keys = new Set(), pointers = new Map(), padKeys = new Map();
   const aliases = {arrowup:'w', arrowdown:'s', arrowleft:'a', arrowright:'d'};
   const clamp = THREE.MathUtils.clamp;
   const start = location.hash.slice(1);
   let [x,z,yaw,pitch] = Object.hasOwn(views,start) ? views[start] : views.bridge;
   // The vantage keeps its own small look-around offset; walking state is never touched.
-  let vista = 'a', glance = {yaw:0, pitch:0};
+  let glance = {yaw:0, pitch:0};
   // This rig has its own focus, lens and orbit. Walking coordinates stay in metres.
   const orbit = {x:0, z:-4, bearing:-.45, elevation:.47, distance:62};
   let current = 'walk', dirty = true, last = performance.now();
   const isOverview = () => current === 'overview';
-  const pose = () => vistas[vista][camera.aspect < .8 ? 'narrow' : 'wide'];
+  const pose = () => vista[camera.aspect < .8 ? 'narrow' : 'wide'];
+  // Keep at least the horizontal field of the reference aspect so both shops stay in frame.
+  const lens = ({fov,aspect}) => Math.max(fov,
+    2*THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(fov)/2)*aspect/camera.aspect)));
 
   function clearInput() {
     for (const [id,btn] of padKeys) if (btn.hasPointerCapture(id)) btn.releasePointerCapture(id);
@@ -39,7 +40,7 @@
   function size() {
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight;
-    camera.fov = current === 'vista' ? pose().fov
+    camera.fov = current === 'vista' ? lens(pose())
       : isOverview() ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
     camera.updateProjectionMatrix();
     dirty = true;
@@ -47,10 +48,14 @@
   const help = {
     walk: ['WASD・矢印で歩く　ドラッグで見回す', '方向ボタンで歩く　ドラッグで見回す'],
     overview: ['ドラッグで回転　ホイールでズーム　右ドラッグ・矢印で移動', '1本指で回転　2本指で移動・ピンチでズーム'],
-    vista: ['ドラッグ・Q/Eで少し見回す　案A・案Bで構図を切り替え', '1本指で少し見回す　案A・案Bで構図を切り替え']
+    vista: ['ドラッグ・Q/Eで少し見回す　もう一度押すと構図に戻る', '1本指で少し見回す　もう一度押すと構図に戻る']
   };
   function mode(next) {
-    if (next === current) return;
+    // Pressing the vista again returns the look-around to the composed frame.
+    if (next === current) {
+      if (next === 'vista') { glance = {yaw:0, pitch:0}; dirty = true }
+      return;
+    }
     clearInput();
     current = next;
     glance = {yaw:0, pitch:0};
@@ -60,19 +65,11 @@
       b.setAttribute('aria-pressed', String(b.dataset.mode === next));
     }
     select.hidden = next !== 'walk';
-    picker.hidden = next !== 'vista';
     document.querySelector('#pad').hidden = next !== 'walk';
     document.querySelector('#desktop-help').textContent = help[next][0];
     document.querySelector('#touch-help').textContent = help[next][1];
     size();
     canvas.focus({preventScroll:true});
-  }
-  function compose(name) {
-    vista = name; glance = {yaw:0, pitch:0};
-    for (const b of picker.querySelectorAll('[data-vista]')) {
-      b.setAttribute('aria-pressed', String(b.dataset.vista === name));
-    }
-    size();
   }
   function onTap(b, activate) {
     b.onclick = activate;
@@ -89,9 +86,6 @@
     };
   }
   for (const b of document.querySelectorAll('[data-mode]')) onTap(b, () => mode(b.dataset.mode));
-  for (const b of picker.querySelectorAll('[data-vista]')) {
-    onTap(b, () => { compose(b.dataset.vista); canvas.focus({preventScroll:true}) });
-  }
   select.onchange = () => {
     clearInput();
     if (select.value) [x,z,yaw,pitch] = views[select.value];
@@ -171,7 +165,7 @@
       camera.lookAt(...target);
       camera.rotateOnWorldAxis(new THREE.Vector3(0,1,0),glance.yaw);
       camera.rotateX(glance.pitch);
-      place = '橋の眺め・'+vistas[vista].name;
+      place = '橋の眺め・東岸の高台';
     } else if (isOverview()) {
       // A portrait lens needs more horizontal clearance for both riverside facades.
       const distance = orbit.distance * Math.max(1,.52/camera.aspect);
@@ -218,8 +212,8 @@
     if (f || r || turn || dirty) renderCamera();
     requestAnimationFrame(frame);
   }
-  const [, opening, choice] = /^(vista|overview)(?:-([ab]))?$/.exec(start) || [];
-  if (choice) compose(choice);
-  if (opening) mode(opening);
+  // #vista-b is kept for links made while two vistas were compared; #vista-a opens on the bridge.
+  const openings = {vista:'vista', 'vista-b':'vista', overview:'overview'};
+  if (Object.hasOwn(openings,start)) mode(openings[start]);
   onresize=size; size(); requestAnimationFrame(frame);
 })();

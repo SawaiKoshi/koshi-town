@@ -17,8 +17,9 @@ sun.castShadow=true;
 Object.assign(sun.shadow.camera,{left:-43,right:43,top:39,bottom:-39,far:116});
 const shadowSize=Math.min(innerWidth<600?2048:4096,renderer.capabilities.maxTextureSize);
 sun.shadow.mapSize.set(shadowSize,shadowSize);sun.shadow.normalBias=.012;sun.shadow.bias=-.00007;
-// Warm light bounced off the river and paving reaches facades turned away from the low sun.
-const bounce=new T.DirectionalLight(0xffc08e,.62);bounce.position.set(30,12,34);scene.add(bounce);
+// A faint, slightly cool fill lifts facades turned away from the low sun without warming
+// their shade; the shadow side stays blue-violet against the sunlit fronts.
+const bounce=new T.DirectionalLight(0xdfe4f4,.3);bounce.position.set(30,12,34);scene.add(bounce);
 // Canopies read the sun's direction in view space to light the leaves it shines through.
 const sunView=new T.Vector3();
 scene.onBeforeRender=(_,__,view)=>sunView.copy(sun.position).sub(sun.target.position).transformDirection(view.matrixWorldInverse);
