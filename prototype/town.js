@@ -350,7 +350,8 @@ timber(-2.63,1.19,3.1,1.35,2.38,.23,'#895e39');
 round(-3.6,2.01,3.53,.19,.72,.19,'#f4e7d2');for(let i=0;i<3;i++)round(-3.6,1.80+i*.17,3.53,.196,.082,.196,i===1?'#48647f':'#b35c50',0,0,-.30);
 chair(.45,4.12);chair(2.16,4.12);round(1.31,.75,4.1,.9,.10,.9,'#eee4ce');round(1.31,.39,4.1,.14,.78,.14,'#e1d6c6');for(let j=0;j<12;j++)box(-.7+j*.36,.45,3.54,.24,.6+rand()*.58,.24,'#675440');bush(-3.6,.12,4.25,1.1);bush(3.7,.1,4.1,.8,true);
 });
-site(-10,-8,.60,11,6,()=>{
+const pisola={x:-10,z:-8,angle:.60};
+site(pisola.x,pisola.z,pisola.angle,11,6,()=>{
 box(0,1.8,0,11,3.6,6,'#93603d');
 for(let j=0;j<20;j++)for(let k=0;k<5;k++)timber(-4.4+k*2.2,j*.18+.09,3.028,2.19,.171,.068,pick(['#b77d4a','#c08b5c','#be8455']));
 houseRoof(11,6,3.63,'#51494b',true);
@@ -901,5 +902,14 @@ function canWalk(x,z){
    return Math.abs(dx*c-dz*s)<b.w/2+.24&&Math.abs(dx*s+dz*c)<b.d/2+.24;
  });
 }
-return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salonDoor};
+// What the bridge vista must keep in frame: all of PISOLA (eave ends, gable sign, teal pillars,
+// palm crowns) and SISTER's front (cornice, sign, awnings, chairs). Its far side may be cropped.
+const onSite=({x,z,angle},points)=>points.map(([px,py,pz])=>
+ new T.Vector3(px,py,pz).applyMatrix4(new T.Matrix4().makeRotationY(angle).setPosition(x,height(z),z)));
+const vistaKeep=[
+ ...onSite(pisola,[[-5.89,3.49,3.38],[5.89,3.49,3.38],[-5.89,3.29,3.38],[5.89,3.29,3.38],[-5.89,3.39,-3.38],[5.89,3.39,-3.38],
+  [-5.89,4.97,0],[5.89,4.97,0],[0,5.29,3.47],[-5.54,3.5,3.68],[-5.54,0,3.68],[5.54,3.5,3.68],[5.54,0,3.68],[-6.02,5.85,2.7],[6.18,4.95,1.4]]),
+ ...onSite(salon,[[-4.12,6.8,3.12],[4.12,6.8,3.12],[-4.12,0,3.12],[4.12,0,3.12],[-1.05,2.69,4.07],[3.78,2.69,4.07],[.45,0,4.4],[2.16,0,4.4]])
+];
+return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salonDoor,vistaKeep};
 })();

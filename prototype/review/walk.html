@@ -791,7 +791,8 @@ timber(-2.63,1.19,3.1,1.35,2.38,.23,'#895e39');
 round(-3.6,2.01,3.53,.19,.72,.19,'#f4e7d2');for(let i=0;i<3;i++)round(-3.6,1.80+i*.17,3.53,.196,.082,.196,i===1?'#48647f':'#b35c50',0,0,-.30);
 chair(.45,4.12);chair(2.16,4.12);round(1.31,.75,4.1,.9,.10,.9,'#eee4ce');round(1.31,.39,4.1,.14,.78,.14,'#e1d6c6');for(let j=0;j<12;j++)box(-.7+j*.36,.45,3.54,.24,.6+rand()*.58,.24,'#675440');bush(-3.6,.12,4.25,1.1);bush(3.7,.1,4.1,.8,true);
 });
-site(-10,-8,.60,11,6,()=>{
+const pisola={x:-10,z:-8,angle:.60};
+site(pisola.x,pisola.z,pisola.angle,11,6,()=>{
 box(0,1.8,0,11,3.6,6,'#93603d');
 for(let j=0;j<20;j++)for(let k=0;k<5;k++)timber(-4.4+k*2.2,j*.18+.09,3.028,2.19,.171,.068,pick(['#b77d4a','#c08b5c','#be8455']));
 houseRoof(11,6,3.63,'#51494b',true);
@@ -1342,7 +1343,16 @@ function canWalk(x,z){
    return Math.abs(dx*c-dz*s)<b.w/2+.24&&Math.abs(dx*s+dz*c)<b.d/2+.24;
  });
 }
-return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salonDoor};
+// What the bridge vista must keep in frame: all of PISOLA (eave ends, gable sign, teal pillars,
+// palm crowns) and SISTER's front (cornice, sign, awnings, chairs). Its far side may be cropped.
+const onSite=({x,z,angle},points)=>points.map(([px,py,pz])=>
+ new T.Vector3(px,py,pz).applyMatrix4(new T.Matrix4().makeRotationY(angle).setPosition(x,height(z),z)));
+const vistaKeep=[
+ ...onSite(pisola,[[-5.89,3.49,3.38],[5.89,3.49,3.38],[-5.89,3.29,3.38],[5.89,3.29,3.38],[-5.89,3.39,-3.38],[5.89,3.39,-3.38],
+  [-5.89,4.97,0],[5.89,4.97,0],[0,5.29,3.47],[-5.54,3.5,3.68],[-5.54,0,3.68],[5.54,3.5,3.68],[5.54,0,3.68],[-6.02,5.85,2.7],[6.18,4.95,1.4]]),
+ ...onSite(salon,[[-4.12,6.8,3.12],[4.12,6.8,3.12],[-4.12,0,3.12],[4.12,0,3.12],[-1.05,2.69,4.07],[3.78,2.69,4.07],[.45,0,4.4],[2.16,0,4.4]])
+];
+return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salonDoor,vistaKeep};
 })();
 </script><script>(() => {
   const {renderer, scene, camera, height, bridgeY, road, quarter, canWalk} = town;
@@ -1354,12 +1364,14 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
   const doors = [
     ['SISTERの入口',...town.salonDoor], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
   ];
-  // A fixed vantage on the east bank: two bridge arches and the river in front, PISOLA left,
-  // SISTER right, the curving lane and the whole gallery front behind. Portrait screens get
-  // their own framing. Each is composed at its reference aspect; narrower windows widen the lens.
+  // A fixed vantage on the east bank: the bridge and river in front, PISOLA left, SISTER right,
+  // the curving lane and the whole gallery front behind. Portrait screens get their own framing:
+  // a higher eye that looks almost level, with the frame shifted down (a shift lens) so verticals
+  // stay upright while the town fills the middle of the screen. shift is the share of the screen
+  // height the frame moves down.
   const vista = {
-    wide:{eye:[10,6.2,32.5],target:[-2,1,-7],fov:45,aspect:1.6},
-    narrow:{eye:[9.8,7,29.5],target:[-.3,-5.2,-7],fov:84,aspect:375/812}
+    wide:{eye:[10,6.2,32.5],target:[-2,1,-7],fov:45,shift:0},
+    narrow:{eye:[6,12,25],target:[-1.64,9.91,-3.94],fov:84,shift:.229}
   };
   const select = document.querySelector('#views');
   const keys = new Set(), pointers = new Map(), padKeys = new Map();
@@ -1374,9 +1386,23 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
   let current = 'walk', dirty = true, last = performance.now();
   const isOverview = () => current === 'overview';
   const pose = () => vista[camera.aspect < .8 ? 'narrow' : 'wide'];
-  // Keep at least the horizontal field of the reference aspect so both shops stay in frame.
-  const lens = ({fov,aspect}) => Math.max(fov,
-    2*THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(fov)/2)*aspect/camera.aspect)));
+  // Widen the composed lens only as far as it takes to keep all of PISOLA and SISTER's front
+  // 12px inside the window, and never past 90 degrees.
+  const keepMargin = 12, maxFov = 90;
+  function lens({eye,target,fov,shift}) {
+    const look = new THREE.Matrix4().lookAt(new THREE.Vector3(...eye), new THREE.Vector3(...target), camera.up);
+    const toView = look.transpose(), from = new THREE.Vector3(...eye);
+    const across = 1 - 2*keepMargin/innerWidth, up = 1 - 2*shift - 2*keepMargin/innerHeight,
+      down = 1 + 2*shift - 2*keepMargin/innerHeight;
+    let half = Math.tan(THREE.MathUtils.degToRad(fov)/2);
+    for (const point of town.vistaKeep) {
+      const v = point.clone().sub(from).applyMatrix4(toView), depth = -v.z;
+      if (depth <= 0) continue;
+      const x = Math.abs(v.x/depth), y = v.y/depth;
+      half = Math.max(half, x/(camera.aspect*across), y > 0 ? y/up : -y/down);
+    }
+    return Math.min(maxFov, 2*THREE.MathUtils.radToDeg(Math.atan(half)));
+  }
 
   function clearInput() {
     for (const [id,btn] of padKeys) if (btn.hasPointerCapture(id)) btn.releasePointerCapture(id);
@@ -1388,6 +1414,9 @@ return {renderer,scene,camera,buildings,height,bridgeY,road,quarter,canWalk,salo
     camera.aspect = innerWidth / innerHeight;
     camera.fov = current === 'vista' ? lens(pose())
       : isOverview() ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
+    const shift = current === 'vista' ? pose().shift : 0;
+    if (shift) camera.setViewOffset(innerWidth, innerHeight, 0, shift*innerHeight, innerWidth, innerHeight);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     dirty = true;
   }

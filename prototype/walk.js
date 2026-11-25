@@ -8,12 +8,14 @@
   const doors = [
     ['SISTERの入口',...town.salonDoor], ['PISOLAの入口',-8.05,-4.1], ['ゲーム展示館の入口',2.15,-32.55]
   ];
-  // A fixed vantage on the east bank: two bridge arches and the river in front, PISOLA left,
-  // SISTER right, the curving lane and the whole gallery front behind. Portrait screens get
-  // their own framing. Each is composed at its reference aspect; narrower windows widen the lens.
+  // A fixed vantage on the east bank: the bridge and river in front, PISOLA left, SISTER right,
+  // the curving lane and the whole gallery front behind. Portrait screens get their own framing:
+  // a higher eye that looks almost level, with the frame shifted down (a shift lens) so verticals
+  // stay upright while the town fills the middle of the screen. shift is the share of the screen
+  // height the frame moves down.
   const vista = {
-    wide:{eye:[10,6.2,32.5],target:[-2,1,-7],fov:45,aspect:1.6},
-    narrow:{eye:[9.8,7,29.5],target:[-.3,-5.2,-7],fov:84,aspect:375/812}
+    wide:{eye:[10,6.2,32.5],target:[-2,1,-7],fov:45,shift:0},
+    narrow:{eye:[6,12,25],target:[-1.64,9.91,-3.94],fov:84,shift:.229}
   };
   const select = document.querySelector('#views');
   const keys = new Set(), pointers = new Map(), padKeys = new Map();
@@ -28,9 +30,23 @@
   let current = 'walk', dirty = true, last = performance.now();
   const isOverview = () => current === 'overview';
   const pose = () => vista[camera.aspect < .8 ? 'narrow' : 'wide'];
-  // Keep at least the horizontal field of the reference aspect so both shops stay in frame.
-  const lens = ({fov,aspect}) => Math.max(fov,
-    2*THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(fov)/2)*aspect/camera.aspect)));
+  // Widen the composed lens only as far as it takes to keep all of PISOLA and SISTER's front
+  // 12px inside the window, and never past 90 degrees.
+  const keepMargin = 12, maxFov = 90;
+  function lens({eye,target,fov,shift}) {
+    const look = new THREE.Matrix4().lookAt(new THREE.Vector3(...eye), new THREE.Vector3(...target), camera.up);
+    const toView = look.transpose(), from = new THREE.Vector3(...eye);
+    const across = 1 - 2*keepMargin/innerWidth, up = 1 - 2*shift - 2*keepMargin/innerHeight,
+      down = 1 + 2*shift - 2*keepMargin/innerHeight;
+    let half = Math.tan(THREE.MathUtils.degToRad(fov)/2);
+    for (const point of town.vistaKeep) {
+      const v = point.clone().sub(from).applyMatrix4(toView), depth = -v.z;
+      if (depth <= 0) continue;
+      const x = Math.abs(v.x/depth), y = v.y/depth;
+      half = Math.max(half, x/(camera.aspect*across), y > 0 ? y/up : -y/down);
+    }
+    return Math.min(maxFov, 2*THREE.MathUtils.radToDeg(Math.atan(half)));
+  }
 
   function clearInput() {
     for (const [id,btn] of padKeys) if (btn.hasPointerCapture(id)) btn.releasePointerCapture(id);
@@ -42,6 +58,9 @@
     camera.aspect = innerWidth / innerHeight;
     camera.fov = current === 'vista' ? lens(pose())
       : isOverview() ? (camera.aspect < .8 ? 67 : 48) : (innerWidth < 600 ? 78 : 60);
+    const shift = current === 'vista' ? pose().shift : 0;
+    if (shift) camera.setViewOffset(innerWidth, innerHeight, 0, shift*innerHeight, innerWidth, innerHeight);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     dirty = true;
   }
