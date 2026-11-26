@@ -81,7 +81,7 @@ h2 { font-size: 1.55rem; }
 .guide-intro { margin: 8px 0 18px; font-size: .8rem; }
 .project-list { display: grid; gap: 9px; }
 .project-card { display: flex; align-items: center; padding: 10px; gap: 12px; background: #fcfbf5; border: 1px solid var(--line); border-radius: 7px; }
-.thumb { display: grid; flex: 0 0 64px; height: 64px; place-items: center; background: var(--venue-tint); border-radius: 3px; }
+.thumb { display: grid; grid-template: minmax(0,1fr) / minmax(0,1fr); flex: 0 0 64px; height: 64px; place-items: center; background: var(--venue-tint); border-radius: 3px; }
 .thumb canvas { width: 98%; height: 95%; object-fit: contain; }
 .card-copy { display: grid; line-height: 1.4; }
 .venue { color: var(--venue-color); font-size: .69rem; font-weight: 700; }
