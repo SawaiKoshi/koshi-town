@@ -59,4 +59,4 @@
 
 - 同時進行の上限：2タスク（`dist/scene.js` など同じファイルに触るタスクは順番に）
 - prototype/town.js・walk.js に触るタスクは順番に進める
-- 表示を変えたタスクは、prototype/review/ に変更前後の PC 1280×800・375×812 の画像を残す
+- 表示を変えたタスクは、変更前後の PC 1280×800・375×812 の画像を残す。置き場所は、prototype/ のタスクなら prototype/review/、dist/ のタスクなら docs/review/<Issue番号>-<短い名前>/（どちらも公開されない場所）
