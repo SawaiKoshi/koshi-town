@@ -19,14 +19,18 @@
   function describe(value) {
     if (value instanceof Error) return value.name + ': ' + value.message;
     if (typeof value === 'string') return value;
-    try { return JSON.stringify(value) } catch (e) { return String(value) }
+    if (value === null || (typeof value !== 'object' && typeof value !== 'function')) return String(value);
+    // Objects are named, not serialised: Three.js objects can be very large.
+    const name = value.constructor && value.constructor.name;
+    return name ? '[' + name + ']' : Object.prototype.toString.call(value);
   }
   addEventListener('error', e => {
     try {
       if (e instanceof ErrorEvent) {
         note('エラー', e.message, e.filename ? short(e.filename) + ':' + e.lineno + ':' + e.colno : '');
       } else if (e.target && e.target.tagName) {
-        note('読み込み失敗', '<' + e.target.tagName.toLowerCase() + '>', e.target.src || e.target.href || '');
+        // Only the file name: a full URL would show the PC's address in screenshots from the phone.
+        note('読み込み失敗', '<' + e.target.tagName.toLowerCase() + '>', short(e.target.src || e.target.href || ''));
       }
     } catch (err) { /* never disturb the page */ }
   }, true);
@@ -57,7 +61,7 @@
     'background:#121a16d9;border-radius:6px;font:11px/1.35 ui-monospace,Menlo,Consolas,monospace}' +
     '#debug-panel button{margin:0;padding:5px 8px;border:0;background:none;text-align:left;' +
     'white-space:pre-wrap;font:inherit;font-weight:bold}' +
-    '#debug-panel pre{margin:0;padding:0 8px 6px;overflow:auto;white-space:pre-wrap;word-break:break-all;' +
+    '#debug-panel pre{margin:0;padding:0 8px 6px;overflow:auto;overscroll-behavior:contain;white-space:pre-wrap;word-break:break-all;' +
     'font:inherit;touch-action:pan-y}' +
     '@media(max-width:760px),(pointer:coarse){#debug-panel{top:calc(env(safe-area-inset-top,0px) + 63px);' +
     'right:calc(env(safe-area-inset-right,0px) + 8px);max-width:min(340px,calc(50vw - 8px));' +
@@ -168,6 +172,9 @@
     const lines = [fpsLine(), '画面の更新 ' + ticks.length + '回/秒　1秒を超える停止 ' + stalls + '回',
       '1分ごと（平均/最低） ' + (minutes.length ? minutes.join(' ') : 'まだなし'),
       '経過 ' + Math.floor(now() / 60000) + '分' + String(Math.floor(now() / 1000) % 60).padStart(2, '0') + '秒'];
+    // Errors come before the values that never change, so a narrow screen shows them without scrolling.
+    lines.push('', 'エラー ' + counts.error + '　警告 ' + counts.warn);
+    entries.forEach(e => lines.push('[' + sec(e.time) + '秒] ' + e.kind + ' ' + e.text + (e.where ? '　' + e.where : '')));
     const vv = window.visualViewport;
     const orientation = screen.orientation ? screen.orientation.type + ' ' + screen.orientation.angle + '°'
       : (matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape');
@@ -190,14 +197,12 @@
       lines.push(link.version, 'レンダラー ' + link.name, '最大テクスチャ ' + link.maxTexture,
         '影 ' + (shadow ? shadow.mapSize.x + '×' + shadow.mapSize.y + (shadow.map ? '（作成済み）' : '（未作成）') : 'なし'));
     } else {
-      lines.push(failed ? '町の準備に失敗（下のエラーを見る）' : '町を準備中…');
+      lines.push(failed ? '町の準備に失敗（上のエラーを見る）' : '町を準備中…');
     }
     lines.push('読み込み ' + (firstShown === null ? '—' : '画面に出るまで ' + sec(firstShown) + '秒') +
       '（DOMContentLoaded ' + (contentLoaded === null ? '—' : sec(contentLoaded)) +
-      '／最初の描画 ' + (firstRender === null ? '—' : sec(firstRender)) + '）　描画 ' + renders + '回', '',
-      'エラー ' + counts.error + '　警告 ' + counts.warn);
-    entries.forEach(e => lines.push('[' + sec(e.time) + '秒] ' + e.kind + ' ' + e.text + (e.where ? '　' + e.where : '')));
-    lines.push('', navigator.userAgent);
+      '／最初の描画 ' + (firstRender === null ? '—' : sec(firstRender)) + '）　描画 ' + renders + '回',
+      '', navigator.userAgent);
     text.textContent = lines.join('\n');
   }
   update();
